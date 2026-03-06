@@ -1,0 +1,87 @@
+:host {
+  display: block;
+}
+
+.editor-page {
+  --background: transparent;
+}
+
+.editor-hero {
+  background: linear-gradient(120deg, rgba(29, 122, 109, 0.12), rgba(241, 166, 77, 0.2));
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--app-shadow-soft);
+  margin-bottom: 24px;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+.editor-main,
+.editor-side {
+  display: grid;
+  gap: 18px;
+}
+
+.editor-card {
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.field-title {
+  font-weight: 700;
+}
+
+.field-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.tags-list {
+  display: grid;
+  gap: 8px;
+}
+
+.image-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.image-preview img {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--app-border);
+  object-fit: cover;
+}
+
+.publish-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 980px) {
+  .editor-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+}

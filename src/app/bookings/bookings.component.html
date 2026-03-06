@@ -1,0 +1,59 @@
+<ion-content class="bookings-page">
+  <app-admin-shell
+    sectionLabel="Bookings"
+    title="Manage Bookings"
+    subtitle="Track trek reservations, payments, and status updates.">
+
+    <div class="filters">
+      <div class="filter-group">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search by name, trek, or booking id" [(ngModel)]="searchQuery" />
+      </div>
+      <select [(ngModel)]="selectedStatus">
+        <option *ngFor="let s of statusOptions" [value]="s.value">
+          {{ s.label }}
+        </option>
+      </select>
+      <input type="date" [(ngModel)]="startDate" />
+      <input type="date" [(ngModel)]="endDate" />
+    </div>
+
+    <div class="booking-grid">
+      <div class="booking-card" *ngFor="let booking of filteredBookings">
+        <div class="booking-top">
+          <div>
+            <h3>#{{ booking.id }}</h3>
+            <span>Booked on {{ booking.bookingDate }}</span>
+          </div>
+          <span class="status-pill" [ngClass]="'status-' + getStatusColor(booking.status)">
+            {{ booking.status | titlecase }}
+          </span>
+        </div>
+
+        <div class="booking-body">
+          <div>
+            <p><strong>Customer:</strong> {{ booking.customerName }}</p>
+            <p><strong>Email:</strong> {{ booking.email }}</p>
+            <p><strong>Phone:</strong> {{ booking.phone }}</p>
+          </div>
+          <div>
+            <p><strong>Trek:</strong> {{ booking.trekName }}</p>
+            <p><strong>Date:</strong> {{ booking.date }}</p>
+            <p><strong>Participants:</strong> {{ booking.participants }}</p>
+          </div>
+        </div>
+
+        <div class="booking-footer">
+          <strong>₹{{ booking.amount }}</strong>
+          <span class="payment-pill" [ngClass]="'status-' + getPaymentColor(booking.paymentStatus)">
+            {{ booking.paymentStatus | titlecase }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <p *ngIf="filteredBookings.length === 0" class="empty">
+      No bookings found. Try adjusting your filters.
+    </p>
+  </app-admin-shell>
+</ion-content>

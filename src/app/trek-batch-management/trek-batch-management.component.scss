@@ -1,0 +1,357 @@
+:host {
+  display: block;
+}
+
+.trek-batch-page {
+  --background: transparent;
+}
+
+.ops-hero {
+  background: linear-gradient(120deg, rgba(29, 122, 109, 0.12), rgba(241, 166, 77, 0.2));
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  padding: 24px;
+  box-shadow: var(--app-shadow-soft);
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.ops-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: end;
+}
+
+.treks-deck {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.trek-card {
+  background: #fff;
+  border: 1px solid var(--app-border);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: var(--app-shadow-soft);
+  display: grid;
+  grid-template-rows: 120px 1fr;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trek-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--app-shadow);
+}
+
+.trek-cover {
+  position: relative;
+  background: linear-gradient(135deg, rgba(29, 122, 109, 0.85), rgba(31, 89, 83, 0.95));
+}
+
+.trek-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.25), transparent 60%);
+}
+
+.trek-cover-badges {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 16px;
+  gap: 8px;
+}
+
+.trek-cover .pill {
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--app-ink);
+  max-width: min(100%, 260px);
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.trek-difficulty {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.difficulty-easy {
+  color: var(--ion-color-success);
+}
+
+.difficulty-moderate {
+  color: #8a5f00;
+}
+
+.difficulty-difficult,
+.difficulty-extreme,
+.difficulty-challenging {
+  color: var(--ion-color-danger);
+}
+
+.trek-content {
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.trek-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.trek-head h3 {
+  margin: 0;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.trek-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat-tile {
+  background: var(--app-surface-2);
+  border-radius: 14px;
+  padding: 10px;
+  text-align: center;
+}
+
+.stat-tile span {
+  display: block;
+  color: var(--app-ink-muted);
+  font-size: 0.85rem;
+}
+
+.stat-tile strong {
+  font-size: 1.1rem;
+}
+
+.trek-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.state-center {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--app-ink-muted);
+}
+
+.empty-card {
+  background: #fff;
+  border: 1px solid var(--app-border);
+  border-radius: 20px;
+  padding: 24px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.modal-content {
+  padding: 16px;
+}
+
+.batches-list {
+  display: grid;
+  gap: 16px;
+}
+
+.batch-card {
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  padding: 16px;
+  background: #fff;
+  box-shadow: var(--app-shadow-soft);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.batch-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--app-shadow);
+}
+
+.batch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.batch-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.info-item {
+  background: var(--app-surface-2);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.info-item .label {
+  display: block;
+  color: var(--app-ink-muted);
+  font-size: 0.85rem;
+}
+
+.info-item .value {
+  font-weight: 700;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.badge-info {
+  background: #dbeafe;
+  color: #1e3a8a;
+  border: 1px solid #93c5fd;
+}
+
+.badge-secondary {
+  background: #e5e7eb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.bookings-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1080px;
+}
+
+.bookings-table th,
+.bookings-table td {
+  border-bottom: 1px solid var(--app-border);
+  padding: 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.bookings-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.cell-phone {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.cell-amount {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--app-accent);
+}
+
+.detail-box {
+  background: var(--app-surface-2);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.participant-card {
+  border: 1px solid var(--app-border);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.participant-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.participant-card p {
+  margin: 4px 0;
+  color: var(--app-ink);
+}
+
+.empty-note {
+  margin: 0;
+  color: var(--app-ink-muted);
+}
+
+.expand-btn {
+  border: none;
+  background: transparent;
+}
+
+@media (max-width: 900px) {
+  .ops-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .trek-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .trek-cover-badges {
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+
+  .trek-cover .pill {
+    max-width: 100%;
+  }
+}

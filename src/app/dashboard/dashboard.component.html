@@ -1,0 +1,217 @@
+<ion-content class="dash-page">
+  <app-admin-shell
+    sectionLabel="Overview"
+    title="Dashboard"
+    subtitle="Real-time snapshots of treks, bookings, and operations.">
+
+    <section class="stats-grid">
+      <div class="stat-card" *ngFor="let stat of stats" [class.disabled]="stat.disabled"
+        [attr.aria-disabled]="stat.disabled" role="button" (click)="onCardClick(stat)">
+        <div class="stat-icon" [ngClass]="'tone-' + stat.color">
+          <i class="bi" [ngClass]="'bi-' + stat.icon"></i>
+        </div>
+        <div>
+          <h3>
+            {{ stat.isCurrency
+            ? (stat.value | currency:'INR':'symbol':'1.0-0')
+            : stat.value }}
+          </h3>
+          <span>{{ stat.title }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="quick-actions">
+      <div class="section-head">
+        <h2>Quick Actions</h2>
+      </div>
+      <div class="actions-grid">
+        <button class="action-card" *ngFor="let action of quickActions" [routerLink]="action.route">
+          <div class="action-icon" [ngClass]="'tone-' + action.color">
+            <i class="bi" [ngClass]="'bi-' + action.icon"></i>
+          </div>
+          <div>
+            <small>{{ action.label }}</small>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <section class="bookings-section">
+      <div class="section-head row">
+        <div>
+          <h2>Recent Bookings</h2>
+          <p>Track the latest activity across treks.</p>
+        </div>
+        <div class="d-flex justify-content-end align-items-center">
+          <button class="btn-app ghost " (click)="toggleViewAll()">
+            {{ showAllBookings ? 'Hide' : 'View all' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Booking ID</th>
+              <th>Customer</th>
+              <th>Trek</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let booking of recentBooking ; let i = index">
+              <td>#{{ booking.id }}</td>
+              <td>{{ booking.customerName }}</td>
+              <td>{{ booking.trekName }}</td>
+              <td> {{ booking.bookingDate | date: 'dd MMM yyyy' }}</td>
+              <td class="fw-bold">₹{{ booking.amount }}</td>
+              <td>
+                <span class="status-pill" [ngClass]="'status-' + getStatusColor(booking.status)">
+                  {{ booking.status }}
+                </span>
+              </td>
+              <td>
+                <button class="icon-btn subtle" (click)="toggleDetails(i)" type="button"
+                  data-bs-toggle="modal" data-bs-target="#recentBookings">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards">
+        <div class="surface-card booking-card" *ngFor="let booking of recentBooking;  let i = index">
+          <div class="booking-top">
+            <span class="fw-semibold">#{{ booking.id }}</span>
+            <span class="status-pill" [ngClass]="'status-' + getStatusColor(booking.status)">
+              {{ booking.status }}
+            </span>
+          </div>
+          <h6>{{ booking.trekName }}</h6>
+          <small>{{ booking.bookingDate | date: 'dd MMM yyyy' }}</small>
+          <div class="booking-meta">
+            <span>₹{{ booking.amount }}</span>
+            <button class="icon-btn subtle" (click)="toggleDetails(i)" type="button"
+              data-bs-toggle="modal" data-bs-target="#recentBookings">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="showAllBookings" class="bookings-expanded">
+        <div class="filters-bar">
+          <div class="search-field">
+            <i class="bi bi-search"></i>
+            <input type="text" [(ngModel)]="searchQuery" placeholder="Search by name, trek, email, phone..." />
+          </div>
+          <div class="filter-group">
+            <label>Status</label>
+            <select [(ngModel)]="statusFilter">
+              <option *ngFor="let opt of bookingStatusOptions" [value]="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Rows</label>
+            <select [(ngModel)]="pageSize">
+              <option *ngFor="let size of rowOptions" [ngValue]="size">{{ size }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap expanded-table">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Customer</th>
+                <th>Trek</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let booking of pagedBookings">
+                <td>#{{ booking.id }}</td>
+                <td>{{ booking.customerName }}</td>
+                <td>{{ booking.trekName }}</td>
+                <td>{{ booking.bookingDate | date: 'dd MMM yyyy' }}</td>
+                <td class="fw-bold">₹{{ booking.amount }}</td>
+                <td>
+                  <span class="status-pill" [ngClass]="'status-' + getStatusColor(booking.status)">
+                    {{ booking.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination-bar">
+            <span class="page-info">
+              Showing {{ pagedBookings.length }} of {{ filteredBookings.length }}
+            </span>
+            <div class="page-actions">
+              <button class="btn-app ghost" (click)="prevPage()" [disabled]="currentPage === 1">Prev</button>
+              <button
+                class="page-btn"
+                *ngFor="let p of pageNumbers"
+                [class.active]="p === currentPage"
+                (click)="setPage(p)">
+                {{ p }}
+              </button>
+              <button class="btn-app ghost" (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+            </div>
+            <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </app-admin-shell>
+</ion-content>
+
+<!-- Modal -->
+<div class="modal custom-backdrop" id="recentBookings" data-bs-backdrop="false" data-bs-keyboard="false" tabindex="-1"
+  aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="staticBackdropLabel">
+          Recent Bookings
+        </h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body recent-bookings card p-2 mb-3">
+        <div *ngFor="let booking of recentBooking; let i = index" class="booking-item">
+          <div *ngIf="selectedBookingIndex == i" class="booking-details mt-2 p-2 border rounded bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <span>{{ booking.customerName }} ({{ booking.trekName }})</span>
+              <span class="fw-bold">₹{{ booking.amount }}</span>
+            </div>
+            <p><strong>Email:</strong> {{ booking.email }}</p>
+            <p><strong>Phone:</strong> {{ booking.phone }}</p>
+            <p><strong>Date:</strong> {{ booking.bookingDate | date:'dd MMM yyyy' }}</p>
+            <p><strong>Participants:</strong> {{ booking.participants }}</p>
+            <p><strong>Status:</strong> {{ booking.status }}</p>
+            <p><strong>Payment Status:</strong> {{ booking.paymentStatus }}</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-app" data-bs-target="#exampleModalToggle" data-bs-toggle="modal"
+          (click)="closeDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

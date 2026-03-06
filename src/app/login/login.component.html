@@ -1,0 +1,52 @@
+<ion-content class="auth-page">
+  <div class="auth-shell">
+    <section class="brand-panel">
+      <div class="header-left">
+        <img loading="eager" fetchpriority="high" decoding="async" class="logo" src="../../../assets/assets/logo.png" alt="Logo" routerLink="/" />
+        <a class="gw-logo logo-dark" href="#">
+          <div class="gw-words">
+            <div class="gw-top">
+              <span class="gw-go">go</span>
+              <span class="gw-wild">WILD</span>
+            </div>
+            <span class="gw-sub">Karunadu</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="auth-card">
+      <div class="card-head">
+        <h2>Sign in</h2>
+        <p>Use your admin credentials to continue.</p>
+      </div>
+
+      <form [formGroup]="credentials">
+        <label class="field-label">Admin Email</label>
+        <div class="field">
+          <i class="bi bi-envelope"></i>
+          <input type="email" placeholder="admin@email.com" required formControlName="email" />
+        </div>
+
+        <label class="field-label">Password</label>
+        <div class="field">
+          <i class="bi bi-lock"></i>
+          <input [type]="showPassword ? 'text' : 'password'" placeholder="Enter password" required
+            formControlName="password" />
+          <button class="field-action" type="button" (click)="togglePassword()">
+            {{ showPassword ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+
+        <button type="submit" class="btn-app auth-submit" (click)="login()">
+          Sign In
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="auth-foot">
+        © 2026 Karnataka Adventures. All rights reserved.
+      </div>
+    </section>
+  </div>
+</ion-content>

@@ -1,0 +1,184 @@
+<app-admin-shell
+  title="Trek Details"
+  subtitle="Review trek information, batches, ratings, and itinerary."
+  sectionLabel="Treks">
+<ion-content class="tour-page">
+  <div *ngIf="tour && !isLoading">
+    <div class="hero-image">
+      <img loading="lazy" decoding="async" [src]="getImageUrl(tour.image)" [alt]="tour.name" (error)="$event.target.src='assets/placeholder-trek.jpg'" />
+      <div class="hero-overlay">
+        <button class="icon-btn" routerLink="/admin/treks/list" aria-label="Back">
+          <i class="bi bi-arrow-left text-dark"></i>
+        </button>
+        <span class="hero-pill">{{ tour.availableSlots }} slots available</span>
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <div class="tour-header">
+        <div>
+          <h1>{{ tour.name }}</h1>
+          <p class="location"><i class="bi bi-geo-alt"></i> {{ tour.location }}</p>
+          <div class="tour-tags">
+            <span class="pill"><i class="bi bi-star-fill"></i> {{ tour.rating }}</span>
+            <span class="muted">({{ tour.reviewCount }} reviews)</span>
+            <span class="badge" [ngClass]="getDifficultyColor(tour.difficulty)">{{ tour.difficulty }}</span>
+            <span class="badge bg-info text-dark">{{ tour.category }}</span>
+          </div>
+        </div>
+        <div class="price-card">
+          <span>Starting from</span>
+          <strong>₹{{ tour.price | number }}</strong>
+          <small>per person</small>
+        </div>
+      </div>
+
+      <div class="quick-info">
+        <div class="info-card">
+          <i class="bi bi-clock"></i>
+          <div>
+            <small>Duration</small>
+            <strong>{{ tour.duration }}</strong>
+          </div>
+        </div>
+        <div class="info-card">
+          <i class="bi bi-activity"></i>
+          <div>
+            <small>Difficulty</small>
+            <strong>{{ tour.difficulty }}</strong>
+          </div>
+        </div>
+        <div class="info-card">
+          <i class="bi bi-heart-pulse"></i>
+          <div>
+            <small>Fitness</small>
+            <strong>{{ tour.fitnessLevel }}</strong>
+          </div>
+        </div>
+        <div class="info-card">
+          <i class="bi bi-people"></i>
+          <div>
+            <small>Age Range</small>
+            <strong>{{ tour.minAge }}-{{ tour.maxAge }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-row">
+        <button [class.active]="selectedSegment === 'overview'" (click)="selectedSegment='overview'">Overview</button>
+        <button [class.active]="selectedSegment === 'itinerary'" (click)="selectedSegment='itinerary'">Itinerary</button>
+        <button [class.active]="selectedSegment === 'inclusions'" (click)="selectedSegment='inclusions'">Inclusions</button>
+        <button [class.active]="selectedSegment === 'info'" (click)="selectedSegment='info'">Info</button>
+      </div>
+
+      <div class="tab-content">
+        <div *ngIf="selectedSegment === 'overview'">
+          <div class="section-block">
+            <h3>About This Trek</h3>
+            <p>{{ tour.overview }}</p>
+          </div>
+
+          <div class="section-block">
+            <h3>Highlights</h3>
+            <div class="highlight-list">
+              <div *ngFor="let highlight of tour.highlights" class="highlight-item">
+                <i class="bi bi-check2-circle"></i>
+                <span>{{ highlight }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <h3>Photo Gallery</h3>
+            <div class="gallery-grid">
+              <img loading="lazy" decoding="async" *ngFor="let photo of tour.gallery" [src]="getImageUrl(photo)"
+                (error)="$event.target.src='assets/placeholder-trek.jpg'" />
+            </div>
+          </div>
+
+          <div class="section-block">
+            <h3>Available Dates</h3>
+            <div class="date-pills">
+              <span class="pill" *ngFor="let date of tour.nextDates">{{ date }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="selectedSegment === 'itinerary'">
+          <div class="accordion" id="itineraryAccordion">
+            <div class="accordion-item" *ngFor="let day of tour.itinerary; let i = index">
+              <h2 class="accordion-header" [id]="'heading' + i">
+                <button class="accordion-button" [class.collapsed]="i !== 0" type="button" data-bs-toggle="collapse"
+                  [attr.data-bs-target]="'#collapse' + i" [attr.aria-expanded]="i === 0"
+                  [attr.aria-controls]="'collapse' + i">
+                  <span class="badge bg-primary me-2">Day {{ day.day }}</span>
+                  <strong>{{ day.title }}</strong>
+                </button>
+              </h2>
+              <div [id]="'collapse' + i" class="accordion-collapse collapse" [class.show]="i === 0"
+                [attr.aria-labelledby]="'heading' + i" data-bs-parent="#itineraryAccordion">
+                <div class="accordion-body">
+                  <div class="timeline">
+                    <div class="timeline-item" *ngFor="let activity of day.activities">
+                      <div class="timeline-time">{{ formatTime(activity.activityTime) }}</div>
+                      <div class="timeline-dot"></div>
+                      <div class="timeline-content">{{ activity.activityText }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="selectedSegment === 'inclusions'">
+          <div class="section-block">
+            <h3>What's Included</h3>
+            <ul class="clean-list">
+              <li *ngFor="let item of tour.inclusions"><i class="bi bi-check-circle"></i>{{ item }}</li>
+            </ul>
+          </div>
+
+          <div class="section-block">
+            <h3>What's Not Included</h3>
+            <ul class="clean-list danger">
+              <li *ngFor="let item of tour.exclusions"><i class="bi bi-x-circle"></i>{{ item }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div *ngIf="selectedSegment === 'info'">
+          <div class="section-block">
+            <h3>Things to Carry</h3>
+            <ul class="clean-list info">
+              <li *ngFor="let item of tour.thingsToCarry"><i class="bi bi-backpack"></i>{{ item }}</li>
+            </ul>
+          </div>
+          <div class="section-block warning-block">
+            <h3>Important Notes</h3>
+            <ul>
+              <li *ngFor="let note of tour.importantNotes">{{ note }}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="state-center">
+    <div class="surface-card loading-card">
+      <i class="bi bi-hourglass-split"></i>
+      <p>Loading trek details...</p>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && !tour" class="state-center">
+    <div class="surface-card empty-card">
+      <i class="bi bi-compass"></i>
+      <h4>Trek not found</h4>
+      <p>The trek you're looking for doesn't exist.</p>
+      <button class="btn-app" routerLink="/admin/treks/list">Back to Trek List</button>
+    </div>
+  </div>
+</ion-content>
+</app-admin-shell>

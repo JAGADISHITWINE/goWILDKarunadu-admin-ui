@@ -1,0 +1,43 @@
+import { HttpClientModule } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { IonicModule } from '@ionic/angular';
+import { Login } from './login';
+import { AuthService } from '../core/services/auth.service';
+
+@Component({
+  selector: 'app-login',
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, ReactiveFormsModule, HttpClientModule],
+})
+export class LoginComponent implements OnInit {
+  credentials: any;
+  showPassword = false;
+
+  constructor(private router: Router, private loginService: Login, private authService: AuthService) {}
+
+  ngOnInit() {
+    this.credentials = new FormGroup({
+      email: new FormControl('', [Validators.required]),
+      password: new FormControl('', [Validators.required]),
+    });
+  }
+
+  login() {
+    this.loginService.auth(this.credentials.value).subscribe((res: any) => {
+      if (res.response === true && res.user) {
+        this.authService.setUser(res.user);
+        this.credentials.reset();
+        this.router.navigateByUrl(this.authService.getDefaultAuthorizedRoute(), { replaceUrl: true });
+      }
+    });
+  }
+
+  togglePassword() {
+    this.showPassword = !this.showPassword;
+  }
+}

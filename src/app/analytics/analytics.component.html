@@ -1,0 +1,88 @@
+<ion-content class="analytics-page">
+<app-admin-shell
+    sectionLabel="Revenue"
+    title="Revenue Reports"
+    subtitle="Track earnings, booking performance, and trek-wise contribution in real time.">
+
+  <div class="app-shell">
+    <div class="header-row mb-3 d-flex justify-content-end">
+      <button class="btn-app ghost" (click)="exportReport()">
+        <i class="bi bi-download"></i>
+        Export report
+      </button>
+    </div>
+
+    <section class="summary-section">
+      <div class="revenue-card">
+        <div>
+          <h3>Total Revenue</h3>
+          <span class="pill">{{ monthlyGrowthLabel }}</span>
+        </div>
+        <div class="revenue-amount">₹{{ totalRevenue | number }}</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon tone-primary">
+            <i class="bi bi-ticket"></i>
+          </div>
+          <div>
+            <div class="stat-value">{{ totalBookings }}</div>
+            <div class="stat-label">Total Bookings</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon tone-warning">
+            <i class="bi bi-graph-up"></i>
+          </div>
+          <div>
+            <div class="stat-value">₹{{ averageBookingValue }}</div>
+            <div class="stat-label">Avg Booking Value</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="monthly-section">
+      <div class="section-head">
+        <h2>Monthly Revenue</h2>
+        <p>Quick glance at the last 12 months.</p>
+      </div>
+      <div class="month-grid">
+        <div *ngFor="let data of monthlyData" class="month-card">
+          <div class="month-header">
+            <div class="month-name">{{ data.month }}</div>
+            <div class="month-amount">₹{{ data.amount | number }}</div>
+          </div>
+          <div class="month-details">
+            <span>{{ data.bookings }} bookings</span>
+            <span>₹{{ (data.amount / data.bookings) | number }} avg</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress" [style.width.%]="(data.amount / 165000) * 100"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="trek-revenue-section">
+      <div class="section-head">
+        <h2>Revenue by Trek</h2>
+        <p>Top performers this season.</p>
+      </div>
+      <div class="surface-card trek-panel">
+        <div class="trek-item" *ngFor="let trek of trekRevenue; let i = index">
+          <div class="trek-rank">{{ i + 1 }}</div>
+          <div class="trek-info">
+            <h4>{{ trek.name }}</h4>
+            <div class="trek-stats">
+              <span>{{ trek.bookings }} bookings</span>
+              <span class="revenue-value">₹{{ trek.revenue | number }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+    </app-admin-shell>
+</ion-content>
