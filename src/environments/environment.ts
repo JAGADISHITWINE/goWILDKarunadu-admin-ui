@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  baseUrl: (window as any)?.__env?.API_BASE_URL || 'http://localhost:4001/api/auth',
+  baseUrl: (window as any)?.__env?.API_BASE_URL || 'https://gowildkarunadu-admin-api-production.up.railway.app/api/auth',
   mediaBaseUrl: (window as any)?.__env?.MEDIA_BASE_URL || 'http://localhost:4001/',
   // Do NOT store production secrets here. Use server-side secrets or a secure runtime config.
   // We keep a non-sensitive salt for client-side derivations only.
