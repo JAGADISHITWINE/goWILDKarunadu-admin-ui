@@ -1,0 +1,417 @@
+import {
+  Component,
+  OnInit,
+  signal,
+  computed,
+  ChangeDetectionStrategy,
+  DestroyRef,
+  inject,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { NotificationsService } from './notifications.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
+import { AdminShellComponent } from '../shared/admin-shell/admin-shell.component';
+
+/* ============================
+   TYPES
+============================ */
+
+export type NotificationType =
+  | 'booking'
+  | 'trek'
+  | 'blog'
+  | 'comment'
+  | 'weather'
+  | 'guide'
+  | 'offer'
+  | 'system';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  date: Date;
+  read: boolean;
+  actionLabel?: string;
+  meta?: string;
+  route?: string;
+}
+
+type FilterTab = 'all' | 'unread' | NotificationType;
+
+interface NotificationView extends Notification {
+  icon: string;
+  typeLabel: string;
+  timeAgo: string;
+  dateIso: string;
+}
+
+/* ============================
+   COMPONENT
+============================ */
+
+@Component({
+  selector: 'app-notifications',
+  standalone: true,
+  imports: [CommonModule, IonicModule, ReactiveFormsModule, FormsModule, AdminShellComponent],
+  providers: [NotificationsService],
+  templateUrl: './notifications.component.html',
+  styleUrls: ['./notifications.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class NotificationsComponent implements OnInit {
+
+  /* ============================
+     STATE (Signals)
+  ============================ */
+
+  loading = signal<boolean>(false);
+  error = signal<string | null>(null);
+  activeTab = signal<FilterTab>('all');
+  showComposer = signal<boolean>(false);
+  composerPreview = signal<boolean>(false);
+  composerSent = signal<boolean>(false);
+
+  composerForm = {
+    title: '',
+    message: '',
+    type: 'booking' as NotificationType,
+    target: 'all',
+    actionLabel: 'View Details',
+    actionUrl: '/admin/bookings'
+  };
+
+  private allNotifications = signal<NotificationView[]>([]);
+
+  /* ============================
+     COMPOSER ACTIONS
+  ============================ */
+
+  toggleComposer() {
+    this.showComposer.update(v => !v);
+    this.composerPreview.set(false);
+    this.composerSent.set(false);
+  }
+
+  togglePreview() {
+    this.composerPreview.update(v => !v);
+  }
+
+  sendNotification() {
+    if (!this.composerForm.title.trim() || !this.composerForm.message.trim()) return;
+
+    const newNotif: NotificationView = {
+      id: 'notif_' + Date.now(),
+      title: this.composerForm.title.trim(),
+      message: this.composerForm.message.trim(),
+      type: this.composerForm.type,
+      date: new Date(),
+      read: false,
+      actionLabel: this.composerForm.actionLabel,
+      route: this.composerForm.actionUrl,
+      icon: this.iconFor(this.composerForm.type),
+      typeLabel: this.labelFor(this.composerForm.type),
+      timeAgo: 'Just now',
+      dateIso: new Date().toISOString()
+    };
+
+    this.allNotifications.update(list => [newNotif, ...list]);
+    this.composerSent.set(true);
+
+    setTimeout(() => {
+      this.showComposer.set(false);
+      this.composerSent.set(false);
+      this.composerForm = {
+        title: '',
+        message: '',
+        type: 'booking',
+        target: 'all',
+        actionLabel: 'View Details',
+        actionUrl: '/admin/bookings'
+      };
+    }, 1500);
+  }
+
+  /* ============================
+     TABS
+  ============================ */
+
+  readonly tabs: { key: FilterTab; label: string }[] = [
+    { key: 'all',     label: 'All' },
+    { key: 'unread',  label: 'Unread' },
+    { key: 'booking', label: 'Bookings' },
+    { key: 'blog',    label: 'Blogs' },
+    { key: 'comment', label: 'Comments' },
+    { key: 'trek',    label: 'Treks' },
+    { key: 'weather', label: 'Weather' },
+    { key: 'offer',   label: 'Offers' },
+  ];
+
+  /* ============================
+     COMPUTED
+  ============================ */
+
+  notifications = computed(() => {
+    const tab = this.activeTab();
+    const all = this.allNotifications();
+
+    if (tab === 'all') return all;
+    if (tab === 'unread') return all.filter(n => !n.read);
+    return all.filter(n => n.type === tab);
+  });
+
+  unreadCount = computed(() =>
+    this.allNotifications().filter(n => !n.read).length
+  );
+
+  /* ============================
+     CONSTRUCTOR
+  ============================ */
+
+  private destroyRef = inject(DestroyRef);
+
+  constructor(
+    private notificationsService: NotificationsService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.fetchNotifications();
+  }
+
+  /* ============================
+     API
+  ============================ */
+
+  fetchNotifications(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.notificationsService.getNotifications()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+      next: (response: any) => {
+        const rows = this.extractNotificationRows(response.data.notifications || response);
+        const mapped: NotificationView[] = rows.map((n: any) => {
+          const date = new Date(n.date || n.createdAt || n.created_at || Date.now());
+          const type = this.mapType(n.type);
+          const route = this.resolveRoute(n, type);
+          return {
+            id: String(n.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+            type,
+            title: n.title || 'Notification',
+            message: n.message || '',
+            date,
+            read: this.isRead(n.read),
+            actionLabel: n.actionLabel || (route ? 'Open' : undefined),
+            meta: n.meta || n.reference || n.trekName || n.postTitle,
+            route,
+            icon: this.getIcon(type),
+            typeLabel: this.getTypeLabel(type),
+            timeAgo: this.timeAgo(date),
+            dateIso: date.toISOString(),
+          };
+        });
+
+        this.allNotifications.set(mapped);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Failed to load notifications.');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  /* ============================
+     ACTIONS
+  ============================ */
+
+  setTab(tab: FilterTab): void {
+    this.activeTab.set(tab);
+  }
+
+  markAllRead(): void {
+    const hadUnread = this.unreadCount() > 0;
+    this.allNotifications.update(ns => ns.map(n => ({ ...n, read: true })));
+
+    if (!hadUnread) return;
+
+    this.notificationsService.markAllRead()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: () => {
+          this.fetchNotifications();
+        }
+      });
+  }
+
+  markRead(id: string): void {
+    let changed = false;
+    this.allNotifications.update(ns =>
+      ns.map(n => {
+        if (n.id === id && !n.read) {
+          changed = true;
+          return { ...n, read: true };
+        }
+        return n;
+      })
+    );
+
+    if (!changed) return;
+
+    this.notificationsService.markRead(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: () => {
+          this.fetchNotifications();
+        }
+      });
+  }
+
+  dismiss(id: string): void {
+    this.allNotifications.update(ns =>
+      ns.filter(n => n.id !== id)
+    );
+  }
+
+  openNotification(notification: NotificationView): void {
+    this.markRead(notification.id);
+    if (notification.route) {
+      this.router.navigateByUrl(notification.route);
+    }
+  }
+
+  onActionClick(event: Event, notification: NotificationView): void {
+    event.stopPropagation();
+    this.openNotification(notification);
+  }
+
+  iconFor(type: NotificationType): string {
+    return this.getIcon(type);
+  }
+
+  resolveIcon(notif: { type?: NotificationType; icon?: string }): string {
+    if (notif.icon && notif.icon.startsWith('bi ')) return notif.icon;
+    if (notif.type) return this.iconFor(notif.type);
+    return 'bi bi-bell-fill';
+  }
+
+  labelFor(type: NotificationType): string {
+    return this.getTypeLabel(type);
+  }
+
+  private getIcon(type: NotificationType): string {
+    const icons: Record<NotificationType, string> = {
+      booking: 'bi bi-ticket-perforated-fill',
+      trek: 'bi bi-compass-fill',
+      blog: 'bi bi-file-earmark-text-fill',
+      comment: 'bi bi-chat-dots-fill',
+      weather: 'bi bi-cloud-sun-fill',
+      guide: 'bi bi-person-badge-fill',
+      offer: 'bi bi-tag-fill',
+      system: 'bi bi-gear-fill',
+    };
+    return icons[type] || 'bi bi-bell-fill';
+  }
+
+  private getTypeLabel(type: NotificationType): string {
+    const labels: Record<NotificationType, string> = {
+      booking: 'Booking',
+      trek: 'Trek',
+      blog: 'Blog',
+      comment: 'Comment',
+      weather: 'Weather',
+      guide: 'Guide',
+      offer: 'Offer',
+      system: 'System',
+    };
+    return labels[type] || 'Notice';
+  }
+
+  private timeAgo(date: Date): string {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+
+    return new Date(date).toLocaleDateString();
+  }
+
+  private mapType(type: string): NotificationType {
+    switch ((type || '').toLowerCase()) {
+      case 'booking':
+      case 'trek':
+      case 'weather':
+      case 'guide':
+      case 'offer':
+      case 'system':
+      case 'blog':
+      case 'comment':
+        return type.toLowerCase() as NotificationType;
+      case 'review':
+        return 'comment';
+      case 'post':
+      case 'content':
+        return 'blog';
+      default:
+        return 'system';
+    }
+  }
+
+  private resolveRoute(notification: any, type: NotificationType): string | undefined {
+    const explicitRoute =
+      notification?.route ||
+      notification?.path ||
+      notification?.url ||
+      notification?.actionUrl ||
+      notification?.targetUrl;
+
+    if (explicitRoute) {
+      return explicitRoute;
+    }
+
+    const entityId = notification?.postId || notification?.blogId || notification?.entityId || notification?.idRef;
+    if (type === 'blog') {
+      return entityId ? `/admin/blog/editor/${entityId}` : '/admin/blog/posts';
+    }
+    if (type === 'comment') {
+      return '/admin/reviews';
+    }
+    if (type === 'booking') {
+      return '/admin/bookings';
+    }
+
+    return undefined;
+  }
+
+  trackById(_: number, n: Notification): string {
+    return n.id;
+  }
+
+  private extractNotificationRows(response: any): any[] {
+    if (Array.isArray(response?.results)) return response.results;
+    if (Array.isArray(response?.data)) return response.data;
+    if (Array.isArray(response?.data?.results)) return response.data.results;
+    if (Array.isArray(response)) return response;
+    return [];
+  }
+
+  private isRead(value: any): boolean {
+    if (value === true || value === 1) return true;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      return normalized === '1' || normalized === 'true' || normalized === 'yes';
+    }
+    return false;
+  }
+}

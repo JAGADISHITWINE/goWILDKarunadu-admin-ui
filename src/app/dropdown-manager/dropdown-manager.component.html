@@ -1,0 +1,345 @@
+<ion-content class="dropdown-page">
+  <app-admin-shell
+    sectionLabel="Catalog"
+    title="Dropdown Manager"
+    subtitle="Manage reusable dropdown groups and values for the entire admin experience.">
+
+    <div class="stats-row">
+      <article class="surface-card stat-card">
+        <span class="stat-label">Groups</span>
+        <strong>{{ groups.length }}</strong>
+      </article>
+      <article class="surface-card stat-card">
+        <span class="stat-label">Active</span>
+        <strong>{{ activeGroupCount }}</strong>
+      </article>
+      <article class="surface-card stat-card">
+        <span class="stat-label">Inactive</span>
+        <strong>{{ inactiveGroupCount }}</strong>
+      </article>
+      <article class="surface-card stat-card stat-card-accent">
+        <span class="stat-label">Options</span>
+        <strong>{{ totalOptions }}</strong>
+        <small>All values are controlled from the database.</small>
+      </article>
+    </div>
+
+    <div class="surface-card toolbar">
+      <div class="toolbar-copy">
+        <p class="eyebrow">Control Panel</p>
+        <h3>Keep groups, values, and status changes visible at a glance.</h3>
+        <p class="subtle">Use filters to focus the list, then collapse the editor to give the table more breathing room.</p>
+      </div>
+
+      <div class="toolbar-actions">
+        <button type="button" class="btn-app ghost" (click)="resetFilters()">
+          Clear Filters
+        </button>
+        <button
+          type="button"
+          class="btn-app ghost"
+          [disabled]="!selectedGroup"
+          (click)="toggleEditorCollapse()">
+          {{ editorCollapsed ? 'Expand Editor' : 'Collapse Editor' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="layout-grid">
+      <section class="surface-card panel create-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Create</p>
+            <h3>New Dropdown Group</h3>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            <span>Group Key</span>
+            <input type="text" [(ngModel)]="newGroup.groupKey" placeholder="bookingStatus" />
+          </label>
+          <label>
+            <span>Label</span>
+            <input type="text" [(ngModel)]="newGroup.label" placeholder="Booking Status" />
+          </label>
+          <label>
+            <span>Page</span>
+            <input type="text" [(ngModel)]="newGroup.page" placeholder="Bookings" />
+          </label>
+          <label>
+            <span>Sort Order</span>
+            <input type="number" min="0" [(ngModel)]="newGroup.sortOrder" />
+          </label>
+          <label>
+            <span>Status</span>
+            <select [(ngModel)]="newGroup.status">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="action-row">
+          <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app" [disabled]="saving" (click)="createGroup()">
+            {{ saving ? 'Saving...' : 'Create Group' }}
+          </button>
+          <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app ghost" type="button" (click)="resetNewGroup()">Reset</button>
+        </div>
+
+        <div class="feedback" *ngIf="message">{{ message }}</div>
+        <div class="feedback error" *ngIf="error">{{ error }}</div>
+      </section>
+
+      <section class="surface-card panel list-panel">
+        <div class="panel-heading list-head">
+          <div>
+            <p class="eyebrow">Manage</p>
+            <h3>Dropdown Groups</h3>
+          </div>
+
+          <div class="filters">
+            <input type="search" [(ngModel)]="searchQuery" placeholder="Search groups..." />
+            <select [(ngModel)]="statusFilter">
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="group-grid">
+          <aside class="group-list surface-subcard">
+            <button
+              type="button"
+              class="group-item"
+              *ngFor="let group of filteredGroups"
+              [class.active]="group.id === selectedGroupId"
+              (click)="selectGroup(group.id)">
+              <span class="group-avatar">{{ (group.label || 'G').charAt(0) }}</span>
+              <div class="group-meta">
+                <strong>{{ group.label }}</strong>
+                <span>{{ group.groupKey }}</span>
+                <small>{{ group.page }}</small>
+              </div>
+              <div class="group-badge">
+                <span class="status-pill" [ngClass]="'status-' + group.status">{{ group.status }}</span>
+                <span class="count">{{ group.options.length }} options</span>
+              </div>
+            </button>
+
+            <div class="empty-state compact" *ngIf="filteredGroups.length === 0">
+              <h4>No groups found</h4>
+              <p>Try a different search or create a new dropdown group.</p>
+            </div>
+          </aside>
+
+          <section class="detail-panel" *ngIf="selectedGroup as group">
+            <div class="panel-heading detail-head">
+              <div>
+                <p class="eyebrow">Selected Group</p>
+                <h3>{{ group.label }}</h3>
+                <p class="subtle">{{ group.groupKey }} · {{ group.page }}</p>
+              </div>
+              <div class="detail-actions">
+                <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app ghost" type="button" (click)="toggleEditorCollapse()">
+                  {{ editorCollapsed ? 'Show Editor' : 'Hide Editor' }}
+                </button>
+                <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app ghost" type="button" (click)="toggleGroupStatus()">
+                  {{ group.status === 'active' ? 'Deactivate' : 'Activate' }}
+                </button>
+                <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app bg-danger" type="button" (click)="deleteGroup()">Delete</button>
+              </div>
+            </div>
+
+            <section class="surface-subcard compact-summary">
+              <div class="summary-chip">
+                <span>Options</span>
+                <strong>{{ selectedGroupOptionsCount }}</strong>
+              </div>
+              <div class="summary-chip">
+                <span>Status</span>
+                <strong>{{ group.status }}</strong>
+              </div>
+              <div class="summary-chip">
+                <span>Sort</span>
+                <strong>{{ group.sortOrder }}</strong>
+              </div>
+            </section>
+
+            <section class="editor-collapse" *ngIf="!editorCollapsed">
+              <div class="form-grid group-edit-grid">
+                <label>
+                  <span>Group Key</span>
+                  <input type="text" [(ngModel)]="groupDraft.groupKey" />
+                </label>
+                <label>
+                  <span>Label</span>
+                  <input type="text" [(ngModel)]="groupDraft.label" />
+                </label>
+                <label>
+                  <span>Page</span>
+                  <input type="text" [(ngModel)]="groupDraft.page" />
+                </label>
+                <label>
+                  <span>Sort Order</span>
+                  <input type="number" min="0" [(ngModel)]="groupDraft.sortOrder" />
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select [(ngModel)]="groupDraft.status">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="action-row">
+                <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app" [disabled]="saving" type="button" (click)="saveGroup()">
+                  {{ saving ? 'Saving...' : 'Save Group' }}
+                </button>
+                <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app ghost" type="button" (click)="syncGroupDraft()">Reset Draft</button>
+              </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <div class="panel-heading option-head">
+              <div>
+                <p class="eyebrow">Values</p>
+                <h3>Dropdown Options</h3>
+              </div>
+            </div>
+
+            <div class="form-grid option-form" *ngIf="editingOptionId !== null; else newOptionForm">
+              <label>
+                <span>Label</span>
+                <input type="text" [(ngModel)]="optionDraft.label" />
+              </label>
+              <label>
+                <span>Value</span>
+                <input type="text" [(ngModel)]="optionDraft.optionValue" />
+              </label>
+              <label>
+                <span>Sort Order</span>
+                <input type="number" min="0" [(ngModel)]="optionDraft.sortOrder" />
+              </label>
+              <label>
+                <span>Status</span>
+                <select [(ngModel)]="optionDraft.status">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </label>
+              <div class="action-row">
+                <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app" [disabled]="saving" type="button" (click)="saveOption()">
+                  {{ saving ? 'Saving...' : 'Save Option' }}
+                </button>
+                <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app ghost" type="button" (click)="cancelOptionEdit()">Cancel</button>
+              </div>
+            </div>
+
+            <ng-template #newOptionForm>
+              <div class="form-grid option-form">
+                <label>
+                  <span>Label</span>
+                  <input type="text" [(ngModel)]="newOption.label" placeholder="Confirmed" />
+                </label>
+                <label>
+                  <span>Value</span>
+                  <input type="text" [(ngModel)]="newOption.optionValue" placeholder="confirmed" />
+                </label>
+                <label>
+                  <span>Sort Order</span>
+                  <input type="number" min="0" [(ngModel)]="newOption.sortOrder" />
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select [(ngModel)]="newOption.status">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </label>
+                <div class="action-row">
+                  <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app" [disabled]="saving" type="button" (click)="createOption()">
+                    {{ saving ? 'Saving...' : 'Add Option' }}
+                  </button>
+                  <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app ghost" type="button" (click)="resetOptionDraft()">Reset</button>
+                </div>
+              </div>
+            </ng-template>
+
+            <div class="table-wrap" *ngIf="group.options.length > 0">
+              <table class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Label</th>
+                    <th>Value</th>
+                    <th>Sort</th>
+                    <th>Status</th>
+                    <th class="actions-col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let option of group.options">
+                    <td>
+                      <ng-container *ngIf="editingOptionId !== option.id; else editLabelTpl">
+                        <strong>{{ option.label }}</strong>
+                      </ng-container>
+                      <ng-template #editLabelTpl>
+                        <input type="text" [(ngModel)]="optionDraft.label" />
+                      </ng-template>
+                    </td>
+                    <td>
+                      <ng-container *ngIf="editingOptionId !== option.id; else editValueTpl">
+                        {{ option.value }}
+                      </ng-container>
+                      <ng-template #editValueTpl>
+                        <input type="text" [(ngModel)]="optionDraft.optionValue" />
+                      </ng-template>
+                    </td>
+                    <td>
+                      <ng-container *ngIf="editingOptionId !== option.id; else editSortTpl">
+                        {{ option.sortOrder }}
+                      </ng-container>
+                      <ng-template #editSortTpl>
+                        <input type="number" min="0" [(ngModel)]="optionDraft.sortOrder" />
+                      </ng-template>
+                    </td>
+                    <td>
+                      <ng-container *ngIf="editingOptionId !== option.id; else editStatusTpl">
+                        <span class="status-pill" [ngClass]="'status-' + option.status">{{ option.status }}</span>
+                      </ng-container>
+                      <ng-template #editStatusTpl>
+                        <select [(ngModel)]="optionDraft.status">
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </ng-template>
+                    </td>
+                    <td class="actions-col">
+                      <button *ngIf="authService.hasPermission('dropdowns.manage') && editingOptionId !== option.id" class="btn-app" (click)="startEditOption(option)">Edit</button>
+                      <button *ngIf="authService.hasPermission('dropdowns.manage') && editingOptionId === option.id" class="btn-app ghost" (click)="cancelOptionEdit()">Cancel</button>
+                      <button *ngIf="authService.hasPermission('dropdowns.manage') && editingOptionId === option.id" class="btn-app" (click)="saveOption()">
+                        Save
+                      </button>
+                      <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app bg-warning" type="button" (click)="toggleOptionStatus(option)">
+                        {{ option.status === 'active' ? 'Deactivate' : 'Activate' }}
+                      </button>
+                      <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app bg-danger" type="button" (click)="deleteOption(option)">Delete</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="empty-state" *ngIf="group.options.length === 0">
+              <h4>No options yet</h4>
+              <p>Add the first option for this dropdown group above.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
+  </app-admin-shell>
+</ion-content>

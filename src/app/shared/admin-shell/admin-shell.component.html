@@ -1,0 +1,119 @@
+<div class="admin-shell" [class.mobile-nav-open]="isMobileMenuOpen">
+  <aside class="admin-sidebar">
+    <div class="brand-block">
+      <img loading="eager" fetchpriority="high" decoding="async" src="/assets/assets/logo.png" alt="goWILD™ Karunadu Admin" class="brand-logo" />
+      <div class="brand-text">
+        <p>goWILD™ Karunadu Admin</p>
+        <small>Operations Console</small>
+      </div>
+    </div>
+
+    <nav class="admin-nav" aria-label="Primary">
+      <a
+        *ngFor="let item of visibleNavItems"
+        [routerLink]="item.route"
+        (click)="closeMobileMenu()"
+        class="nav-item"
+        [class.active]="isRouteActive(item.route)">
+        <i class="bi" [ngClass]="'bi-' + item.icon"></i>
+        <span>{{ item.label }}</span>
+      </a>
+    </nav>
+
+    <button type="button" class="nav-item sign-out" (click)="logout()">
+      <i class="bi bi-box-arrow-right"></i>
+      <span>Sign out</span>
+    </button>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-header page-header">
+      <button type="button" class="menu-btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+        <i class="bi bi-list"></i>
+      </button>
+      <div>
+        <span class="pill">{{ sectionLabel }}</span>
+        <h1 class="page-title">{{ title }}</h1>
+        <p class="page-subtitle">{{ subtitle }}</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="cmd-palette-trigger" (click)="toggleCommandPalette()" title="Command Palette (Ctrl + K)">
+          <i class="bi bi-search"></i>
+          <span class="cmd-placeholder">Search or jump to...</span>
+          <kbd class="cmd-kbd">⌘K</kbd>
+        </button>
+
+        <div class="user-summary">
+          <span class="role-pill">{{ roleLabel }}</span>
+          <small>{{ permissionCount }} permissions</small>
+        </div>
+
+        <button type="button" class="icon-btn notif-btn" (click)="openNotifications()" aria-label="Notifications">
+          <i class="bi bi-bell"></i>
+          <span class="notif-badge">
+            {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <main class="admin-content">
+      <ng-content></ng-content>
+    </main>
+  </div>
+
+  <!-- Command Palette Modal Overlay -->
+  <div class="cmd-backdrop" *ngIf="isCmdPaletteOpen" (click)="closeCommandPalette()">
+    <div class="cmd-dialog" (click)="$event.stopPropagation()">
+      <div class="cmd-search-box">
+        <i class="bi bi-search cmd-search-icon"></i>
+        <input
+          type="text"
+          class="cmd-input"
+          placeholder="Type a command or jump to page..."
+          [(ngModel)]="cmdSearch"
+          (ngModelChange)="cmdSelectedIndex = 0"
+          autofocus
+        />
+        <span class="cmd-esc-badge" (click)="closeCommandPalette()">ESC</span>
+      </div>
+
+      <div class="cmd-results" *ngIf="filteredCommands.length > 0">
+        <div
+          *ngFor="let cmd of filteredCommands; let i = index"
+          class="cmd-item"
+          [class.selected]="i === cmdSelectedIndex"
+          (mouseenter)="cmdSelectedIndex = i"
+          (click)="executeCommand(cmd)">
+          <div class="cmd-item-icon">
+            <i class="bi" [ngClass]="'bi-' + cmd.icon"></i>
+          </div>
+          <div class="cmd-item-info">
+            <span class="cmd-item-title">{{ cmd.title }}</span>
+            <span class="cmd-item-category">{{ cmd.category }}</span>
+          </div>
+          <i class="bi bi-arrow-return-left cmd-enter-icon" *ngIf="i === cmdSelectedIndex"></i>
+        </div>
+      </div>
+
+      <div class="cmd-empty" *ngIf="filteredCommands.length === 0">
+        <i class="bi bi-emoji-neutral"></i>
+        <p>No matching commands or pages found for "{{ cmdSearch }}"</p>
+      </div>
+
+      <div class="cmd-footer">
+        <div class="cmd-shortcut-hint"><kbd>↑</kbd><kbd>↓</kbd> to navigate</div>
+        <div class="cmd-shortcut-hint"><kbd>↵</kbd> to select</div>
+        <div class="cmd-shortcut-hint"><kbd>esc</kbd> to close</div>
+      </div>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    class="mobile-overlay"
+    *ngIf="isMobileMenuOpen"
+    (click)="closeMobileMenu()"
+    aria-label="Close menu">
+  </button>
+</div>

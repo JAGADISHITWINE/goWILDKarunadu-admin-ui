@@ -1,0 +1,462 @@
+<ion-content class="trek-batch-page">
+  <app-admin-shell title="Trek & Batch Management"
+    subtitle="Control inventory, booking flows, and batch status from one command center." sectionLabel="Operations">
+    <div class="app-shell">
+      <!-- Auto Completion Automation Banner -->
+      <div class="automation-banner mb-3">
+        <div class="auto-badge-group">
+          <span class="auto-indicator-dot pulse"></span>
+          <div class="auto-info">
+            <div class="auto-title">
+              <strong>Automated Trek Completion Engine</strong>
+              <span class="badge badge-success auto-pill"><i class="bi bi-clock-history"></i> Runs Every 30 Mins</span>
+            </div>
+            <div class="auto-desc">
+              Trek batches whose end date has passed (<span class="code">end_date &lt; today</span>) and their confirmed bookings automatically transition to <strong>Completed</strong>.
+              <span *ngIf="autoCompleteStatus?.last_run" class="text-muted ms-2">
+                • Last run: {{ autoCompleteStatus.last_run | date:'shortTime' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="auto-actions">
+          <button
+            class="btn-sweep"
+            type="button"
+            (click)="triggerAutoCompletionSweep()"
+            [disabled]="isSweeping"
+            title="Scan database and complete any past batches and bookings immediately">
+            <i class="bi bi-arrow-repeat" [class.spin]="isSweeping"></i>
+            <span>{{ isSweeping ? 'Sweeping Database...' : 'Run Auto-Completion Sweep' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="ops-actions mb-3">
+        <div class="view-mode-toggle">
+          <button
+            type="button"
+            class="view-toggle-btn"
+            [class.active]="viewMode === 'treks'"
+            (click)="setViewMode('treks')">
+            <i class="bi bi-grid-fill"></i>
+            <span>Trek Cards</span>
+          </button>
+          <button
+            type="button"
+            class="view-toggle-btn"
+            [class.active]="viewMode === 'calendar'"
+            (click)="setViewMode('calendar')">
+            <i class="bi bi-calendar3"></i>
+            <span>Batch Calendar / Scheduler</span>
+          </button>
+        </div>
+
+        <button *ngIf="authService.hasPermission('treks.manage')" class="btn-app ghost" type="button" (click)="goToAddTrek()">
+          <i class="bi bi-plus-circle"></i>
+          Add Trek
+        </button>
+      </div>
+
+      <!-- ─── BATCH CALENDAR VIEW ─── -->
+      <section *ngIf="viewMode === 'calendar'" class="calendar-view-container">
+        <!-- Calendar Controls & Filter Header -->
+        <div class="calendar-header-card">
+          <div class="cal-nav-group">
+            <button class="cal-nav-btn" (click)="prevMonth()" title="Previous Month">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <h2 class="cal-month-title">{{ calendarMonthLabel }}</h2>
+            <button class="cal-nav-btn" (click)="nextMonth()" title="Next Month">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+            <button class="cal-today-btn" (click)="goToToday()">Today</button>
+          </div>
+
+          <div class="cal-filter-group">
+            <div class="trek-filter-wrapper">
+              <i class="bi bi-funnel"></i>
+              <select [(ngModel)]="calendarSelectedTrekId" (ngModelChange)="onCalendarTrekFilterChange()" class="cal-select">
+                <option value="all">All Treks ({{ treks.length }})</option>
+                <option *ngFor="let trek of treks" [value]="trek.id">{{ trek.name }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Month Metrics Banner -->
+        <div class="cal-metrics-banner">
+          <div class="metric-item">
+            <span class="label">Batches This Month</span>
+            <span class="val">{{ calendarMonthBatchesCount }}</span>
+          </div>
+          <div class="metric-item">
+            <span class="label">Total Capacity</span>
+            <span class="val">{{ calendarMonthCapacity.totalSlots }} slots</span>
+          </div>
+          <div class="metric-item">
+            <span class="label">Booked Slots</span>
+            <span class="val text-success">{{ calendarMonthCapacity.bookedSlots }} slots</span>
+          </div>
+          <div class="metric-item">
+            <span class="label">Occupancy Rate</span>
+            <span class="val">{{ calendarMonthCapacity.occupancyRate }}%</span>
+          </div>
+        </div>
+
+        <!-- Calendar Loading State -->
+        <div *ngIf="isLoadingCalendar" class="state-center py-5">
+          <ion-spinner></ion-spinner>
+          <p>Building batch calendar...</p>
+        </div>
+
+        <!-- 7-Day Month Grid -->
+        <div *ngIf="!isLoadingCalendar" class="calendar-grid">
+          <!-- Weekday Headers -->
+          <div class="cal-weekday-header" *ngFor="let wd of weekDays">
+            {{ wd }}
+          </div>
+
+          <!-- Day Cells -->
+          <div
+            *ngFor="let day of calendarDays"
+            class="cal-day-cell"
+            [class.other-month]="!day.isCurrentMonth"
+            [class.is-today]="day.isToday">
+            
+            <div class="cal-day-top">
+              <span class="cal-day-number">{{ day.dayNumber }}</span>
+              <span class="cal-batch-count" *ngIf="day.batches.length > 0">
+                {{ day.batches.length }} {{ day.batches.length === 1 ? 'batch' : 'batches' }}
+              </span>
+            </div>
+
+            <div class="cal-batches-stack">
+              <div
+                *ngFor="let b of day.batches"
+                class="cal-batch-pill"
+                [ngClass]="getSlotFillClass(b)"
+                (click)="openCalendarBatchDetails(b)"
+                [title]="b.trek_name + ' (' + (b.booked_slots || 0) + '/' + b.available_slots + ' slots) - Click to view bookings'">
+                
+                <div class="cal-batch-row">
+                  <span class="cal-batch-name">{{ b.trek_name }}</span>
+                  <span class="cal-batch-price">₹{{ b.price }}</span>
+                </div>
+                <div class="cal-batch-sub">
+                  <span>{{ b.booked_slots || 0 }}/{{ b.available_slots }} booked</span>
+                  <span class="cal-status-dot" [class.inactive]="b.status === 'inactive'"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── TREK CARDS LIST VIEW ─── -->
+      <section *ngIf="viewMode === 'treks' && isLoadingTreks" class="state-center">
+        <ion-spinner></ion-spinner>
+        <p>Loading treks...</p>
+      </section>
+
+      <section *ngIf="viewMode === 'treks' && !isLoadingTreks" class="treks-deck">
+        <article class="trek-card" *ngFor="let trek of treks">
+          <div class="trek-cover"
+            [style.backgroundImage]="trek.image_url ? 'url(' + trek.image_url + ')' : null"
+            [style.backgroundSize]="'cover'"
+            [style.backgroundPosition]="'center'">
+            <div class="trek-cover-overlay"></div>
+            <div class="trek-cover-badges">
+              <span class="trek-difficulty" [ngClass]="'difficulty-' + trek.difficulty.toLowerCase()">
+                {{ trek.difficulty }}
+              </span>
+              <span class="pill">{{ trek.location }}</span>
+            </div>
+          </div>
+
+          <div class="trek-content">
+            <div class="trek-head">
+              <h3>{{ trek.name }}</h3>
+              <button class="icon-btn" (click)="viewBatches(trek)" aria-label="View batches">
+                <i class="bi bi-arrow-up-right text-dark"></i>
+              </button>
+            </div>
+
+            <div class="trek-stats">
+              <div class="stat-tile">
+                <span>Batches</span>
+                <strong>{{ trek.total_batches || 0 }}</strong>
+              </div>
+              <div class="stat-tile">
+                <span>Bookings</span>
+                <strong>{{ trek.total_bookings || 0 }}</strong>
+              </div>
+              <div class="stat-tile">
+                <span>Active</span>
+                <strong>{{ trek.active_batches || 0 }}</strong>
+              </div>
+            </div>
+
+            <div class="trek-actions">
+              <button class="btn-app" (click)="viewBatches(trek)">
+                <i class="bi bi-list-ul"></i>
+                Manage Batches
+              </button>
+              <button *ngIf="authService.hasPermission('bookings.manage')" class="btn-app ghost" (click)="downloadAllTrekBookings(trek)"
+                [disabled]="trek.total_bookings === 0">
+                <i class="bi bi-download"></i>
+                Download All
+              </button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section *ngIf="viewMode === 'treks' && !isLoadingTreks && treks.length === 0" class="state-center">
+        <div class="empty-card">
+          <i class="bi bi-inbox"></i>
+          <h3>No Treks Found</h3>
+          <p>Create your first trek to get started</p>
+          <button *ngIf="authService.hasPermission('treks.manage')" class="btn-app" type="button" (click)="goToAddTrek()">
+            <i class="bi bi-plus-circle"></i>
+            Add Trek
+          </button>
+        </div>
+      </section>
+    </div>
+  </app-admin-shell>
+</ion-content>
+
+<ion-modal [isOpen]="showBatchesModal" (didDismiss)="closeBatchesModal()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ selectedTrek?.name }} - Batches</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeBatchesModal()">
+            <i class="bi bi-x-lg"></i>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content>
+      <div class="modal-content">
+        <div *ngIf="isLoadingBatches" class="state-center">
+          <ion-spinner></ion-spinner>
+          <p>Loading batches...</p>
+        </div>
+
+        <div *ngIf="!isLoadingBatches" class="batches-list">
+
+          <!-- Search inside modal -->
+          <div class="batch-search">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              [(ngModel)]="batchSearchQuery"
+              placeholder="Search by date or status…" />
+          </div>
+
+          <div class="batch-card" *ngFor="let batch of filteredBatches">
+            <div class="batch-header">
+              <div class="batch-dates">
+                <i class="bi bi-calendar3"></i>
+                <span>
+                  {{ batch.start_date | date:'MMM dd, yyyy' }} -
+                  {{ batch.end_date | date:'MMM dd, yyyy' }}
+                </span>
+              </div>
+              <span class="badge" [ngClass]="getBatchStatusClass(batch.status)">
+                {{ batch.status }}
+              </span>
+            </div>
+
+            <div class="batch-info-grid">
+              <div class="info-item">
+                <span class="label">Price</span>
+                <span class="value">₹{{ batch.price }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Available Slots</span>
+                <span class="value">{{ batch.available_slots }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Booked</span>
+                <span class="value">{{ batch.booked_slots || 0 }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Total Bookings</span>
+                <span class="value">{{ batch.total_bookings || 0 }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Participants</span>
+                <span class="value">{{ batch.total_participants || 0 }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Confirmed</span>
+                <span class="value">{{ batch.confirmed_participants || 0 }}</span>
+              </div>
+            </div>
+
+            <!-- Slot Fill Progress Bar -->
+            <div class="slot-fill-section">
+              <div class="slot-fill-labels">
+                <span>Slot fill</span>
+                <span class="slot-fill-pct">{{ batch.booked_slots || 0 }} / {{ batch.available_slots || 0 }} &nbsp;({{ getSlotFillPercent(batch) }}%)</span>
+              </div>
+              <div class="slot-bar">
+                <div
+                  class="slot-fill"
+                  [ngClass]="getSlotFillClass(batch)"
+                  [style.width.%]="getSlotFillPercent(batch)">
+                </div>
+              </div>
+            </div>
+
+            <div class="batch-actions">
+              <button class="btn-app ghost" (click)="viewBookings(batch)" [disabled]="batch.total_bookings === 0">
+                <i class="bi bi-eye"></i>
+                View Bookings ({{ batch.total_bookings || 0 }})
+              </button>
+              <button *ngIf="authService.hasPermission('bookings.manage')" class="btn-app" (click)="downloadBatchBookings(batch)" [disabled]="batch.total_bookings === 0">
+                <i class="bi bi-download"></i>
+                Download
+              </button>
+              <button *ngIf="batch.status === 'active' && !isBatchEnded(batch)" class="btn-app ghost"
+                [disabled]="isBatchActionLoading(batch)"
+                (click)="stopBooking(batch)">
+                <i class="bi bi-stop-circle"></i>
+                Stop Booking
+              </button>
+              <button *ngIf="batch.status === 'inactive'" class="btn-app secondary" [disabled]="isBatchActionLoading(batch)" (click)="resumeBooking(batch)">
+                <i class="bi bi-play-circle"></i>
+                Resume Booking
+              </button>
+              <button *ngIf="(batch.status === 'active' || batch.status === 'full') && isBatchEnded(batch)" class="btn-app secondary"
+                (click)="markBatchCompleted(batch)">
+                <i class="bi bi-check-circle"></i>
+                Mark as Completed
+              </button>
+              <span *ngIf="batch.status === 'completed'" class="status-completed-pill">
+                <i class="bi bi-check2-all"></i> Trek Completed
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!isLoadingBatches && batches.length === 0" class="state-center">
+          <div class="empty-card">
+            <i class="bi bi-calendar-x"></i>
+            <h3>No Batches Found</h3>
+            <p>No batches have been created for this trek yet</p>
+          </div>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+
+<ion-modal [isOpen]="showBookingsModal" (didDismiss)="closeBookingsModal()" cssClass="bookings-modal-large">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>
+          Bookings - {{ selectedBatch?.trek_name }}
+          <br>
+          <small>{{ selectedBatch?.start_date | date:'MMM dd' }} - {{ selectedBatch?.end_date | date:'MMM dd, yyyy'
+            }}</small>
+        </ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeBookingsModal()">
+            <i class="bi bi-x-lg"></i>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content>
+      <div class="modal-content">
+        <div *ngIf="isLoadingBookings" class="state-center">
+          <ion-spinner></ion-spinner>
+          <p>Loading bookings...</p>
+        </div>
+
+        <div *ngIf="!isLoadingBookings && bookings.length > 0" class="bookings-table-container">
+          <table class="bookings-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;"></th>
+                <th>#</th>
+                <th>Booking Ref</th>
+                <th>Customer Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Participants</th>
+                <th>Total Amount (INR)</th>
+                <th>Payment Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let booking of bookings; let i = index">
+                <tr class="summary-row">
+                  <td>
+                    <button class="expand-btn" (click)="toggleBookingExpand(booking)">
+                      <i class="bi" [ngClass]="booking.expanded ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+                    </button>
+                  </td>
+                  <td>{{ i + 1 }}</td>
+                  <td>{{ booking.booking_id }}</td>
+                  <td>{{ booking.name }}</td>
+                  <td>{{ booking.email }}</td>
+                  <td class="cell-phone">{{ booking.phone }}</td>
+                  <td>{{ booking.total_participants }}</td>
+                  <td class="cell-amount">₹{{ booking.total_amount | number:'1.2-2' }}</td>
+                  <td>
+                    <span class="badge text-dark" [ngClass]="getBookingStatusClass(booking.booking_status)">
+                      {{ booking.booking_status }}
+                    </span>
+                  </td>
+                </tr>
+
+                <tr class="detail-row" *ngIf="booking.expanded">
+                  <td colspan="9">
+                    <div class="detail-box">
+                      <h6>Participants</h6>
+                      <div class="participants-grid" *ngIf="booking.participants?.length > 0; else noParticipantData">
+                        <div class="participant-card" *ngFor="let p of booking.participants; let idx = index">
+                          <div class="participant-head">
+                            <strong>Participant {{ idx + 1 }}</strong>
+                            <span class="badge badge-info" *ngIf="p.isPrimary">Primary</span>
+                          </div>
+                          <p><strong>Name:</strong> {{ p.name }}</p>
+                          <p><strong>Age/Gender:</strong> {{ p.age }} / {{ p.gender }}</p>
+                          <p><strong>Phone:</strong> {{ p.phone }}</p>
+                          <p><strong>ID:</strong> {{ p.idType }} - {{ p.idNumber }}</p>
+                          <p><strong>Medical:</strong> {{ p.medicalInfo }}</p>
+                        </div>
+                      </div>
+                      <ng-template #noParticipantData>
+                        <p class="empty-note">Participant details are not available for this booking.</p>
+                      </ng-template>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="!isLoadingBookings && bookings.length === 0" class="state-center">
+          <div class="empty-card">
+            <i class="bi bi-inbox"></i>
+            <h3>No Bookings Found</h3>
+            <p>No booking records are available for this batch.</p>
+          </div>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

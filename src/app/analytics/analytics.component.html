@@ -1,0 +1,114 @@
+<ion-content class="analytics-page">
+  <app-admin-shell
+    sectionLabel="Revenue"
+    title="Revenue Reports"
+    subtitle="Track earnings, booking performance, and trek-wise contribution in real time.">
+
+    <div class="app-shell">
+      <div class="header-row mb-3 d-flex justify-content-end">
+        <button class="btn-app ghost" (click)="exportReport()">
+          <i class="bi bi-download"></i>
+          Export report
+        </button>
+      </div>
+
+      <!-- ── Summary ── -->
+      <section class="summary-section">
+        <div class="revenue-card">
+          <div>
+            <h3>Total Revenue</h3>
+            <span class="pill">{{ monthlyGrowthLabel }}</span>
+          </div>
+          <div class="revenue-amount">₹{{ totalRevenue | number }}</div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon tone-primary">
+              <i class="bi bi-ticket"></i>
+            </div>
+            <div>
+              <div class="stat-value">{{ totalBookings }}</div>
+              <div class="stat-label">Total Bookings</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon tone-warning">
+              <i class="bi bi-graph-up"></i>
+            </div>
+            <div>
+              <div class="stat-value">₹{{ averageBookingValue | number:'1.0-0' }}</div>
+              <div class="stat-label">Avg Booking Value</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Revenue vs Bookings Chart ── -->
+      <section class="chart-section">
+        <div class="section-head chart-head">
+          <div>
+            <h2>Revenue vs Bookings</h2>
+            <p>Monthly trend for the selected period.</p>
+          </div>
+          <div class="range-chips">
+            <button class="range-chip" [class.active]="selectedRange === '3m'" (click)="setRange('3m')">3M</button>
+            <button class="range-chip" [class.active]="selectedRange === '6m'" (click)="setRange('6m')">6M</button>
+            <button class="range-chip" [class.active]="selectedRange === '12m'" (click)="setRange('12m')">12M</button>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-canvas-wrap">
+            <canvas #revenueChart></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Monthly Revenue Grid ── -->
+      <section class="monthly-section">
+        <div class="section-head">
+          <h2>Monthly Breakdown</h2>
+          <p>Quick glance at the last {{ selectedRange === '3m' ? 3 : selectedRange === '6m' ? 6 : 12 }} months.</p>
+        </div>
+        <div class="month-grid">
+          <div *ngFor="let data of filteredMonthlyData" class="month-card">
+            <div class="month-header">
+              <div class="month-name">{{ data.month }}</div>
+              <div class="month-amount">₹{{ (data.amount || data.revenue || 0) | number }}</div>
+            </div>
+            <div class="month-details">
+              <span>{{ data.bookings || 0 }} bookings</span>
+              <span>₹{{ ((data.amount || data.revenue || 0) / (data.bookings || 1)) | number:'1.0-0' }} avg</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress" [style.width.%]="getProgressPercent(data)"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Trek Revenue ── -->
+      <section class="trek-revenue-section">
+        <div class="section-head">
+          <h2>Revenue by Trek</h2>
+          <p>Top performers this season.</p>
+        </div>
+        <div class="surface-card trek-panel">
+          <div class="trek-item" *ngFor="let trek of trekRevenue; let i = index">
+            <div class="trek-rank">{{ i + 1 }}</div>
+            <div class="trek-info" style="flex:1">
+              <h4>{{ trek.name }}</h4>
+              <div class="trek-stats">
+                <span>{{ trek.bookings }} bookings</span>
+                <span class="revenue-value">₹{{ (trek.revenue || trek.amount || 0) | number }}</span>
+              </div>
+              <div class="progress-bar" style="margin-top:8px">
+                <div class="progress" [style.width.%]="((trek.revenue || trek.amount || 0) / maxMonthlyAmount) * 100"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </app-admin-shell>
+</ion-content>

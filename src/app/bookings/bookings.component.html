@@ -1,0 +1,1003 @@
+<ion-content class="bookings-page">
+  <app-admin-shell
+    sectionLabel="Bookings"
+    title="Manage Bookings"
+    subtitle="Track trek reservations, payments, and status updates.">
+
+    <div class="filters">
+      <div class="filter-group filter-search">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search by name, trek, booking id, email, or phone" [(ngModel)]="searchQuery" />
+      </div>
+      <select [(ngModel)]="selectedStatus">
+        <option *ngFor="let s of statusOptions" [value]="s.value">
+          {{ s.label }}
+        </option>
+      </select>
+      <select [(ngModel)]="selectedPayment">
+        <option value="all">All payments</option>
+        <option value="paid">Paid</option>
+        <option value="pending">Pending</option>
+      </select>
+      
+      <!-- Enhanced Date Range Picker & Presets -->
+      <div class="date-range-box">
+        <div class="date-input-wrap">
+          <i class="bi bi-calendar3"></i>
+          <input type="date" [(ngModel)]="startDate" title="Start date" />
+          <span class="date-arrow">&#8594;</span>
+          <input type="date" [(ngModel)]="endDate" title="End date" />
+        </div>
+        <div class="date-presets">
+          <button type="button" class="preset-chip" [class.active]="activeDatePreset === 'today'" (click)="setDatePreset('today')">Today</button>
+          <button type="button" class="preset-chip" [class.active]="activeDatePreset === '7d'" (click)="setDatePreset('7d')">7D</button>
+          <button type="button" class="preset-chip" [class.active]="activeDatePreset === '30d'" (click)="setDatePreset('30d')">30D</button>
+          <button type="button" class="preset-chip" *ngIf="startDate || endDate" (click)="setDatePreset('all')" title="Clear date filter">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="toolbar-meta">
+        <span class="meta-chip">{{ filteredBookings.length }} results</span>
+        <span class="meta-chip" *ngIf="selectedCount > 0">{{ selectedCount }} selected</span>
+        <span class="meta-chip meta-chip-muted">{{ statusBreakdown.confirmed }} confirmed</span>
+        <span class="meta-chip meta-chip-muted">{{ paymentBreakdown.paid }} paid</span>
+      </div>
+      <div class="toolbar-actions">
+        <select [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }} rows</option>
+        </select>
+
+        <!-- Bulk status change — visible only when rows are selected -->
+        <div class="bulk-status-bar" *ngIf="selectedCount > 0">
+          <span class="bulk-label">{{ selectedCount }} selected:</span>
+          <button class="btn-app ghost" type="button" (click)="updateSelectedStatus('confirmed')">
+            <i class="bi bi-check-circle"></i> Confirm
+          </button>
+          <button class="btn-app ghost" type="button" (click)="updateSelectedStatus('pending')">
+            <i class="bi bi-clock"></i> Pending
+          </button>
+          <button class="btn-app ghost" type="button" (click)="updateSelectedStatus('cancelled')">
+            <i class="bi bi-x-circle"></i> Cancel
+          </button>
+        </div>
+
+        <button class="btn-app ghost" type="button" (click)="exportVisible()">Export visible</button>
+        <button class="btn-app ghost" type="button" (click)="exportSelected()" [disabled]="selectedCount === 0">
+          Export selected
+        </button>
+        <button class="btn-app ghost" type="button" (click)="copySelectedIds()" [disabled]="selectedCount === 0">
+          Copy IDs
+        </button>
+        <button class="btn-app ghost" type="button" (click)="resetFilters()">Reset</button>
+      </div>
+    </div>
+
+    <div class="table-shell" *ngIf="filteredBookings.length > 0; else emptyState">
+      <table class="booking-table">
+        <thead>
+          <tr>
+            <th class="col-check">
+              <input
+                type="checkbox"
+                [checked]="isAllVisibleSelected"
+                (change)="toggleVisibleSelection()"
+                [disabled]="pagedBookings.length === 0" />
+            </th>
+            <th (click)="setSort('bookingDate')" role="button">
+              Booked On <i class="bi" [ngClass]="sortIcon('bookingDate')"></i>
+            </th>
+            <th (click)="setSort('customerName')" role="button">
+              Customer <i class="bi" [ngClass]="sortIcon('customerName')"></i>
+            </th>
+            <th>Trek</th>
+            <th (click)="setSort('participants')" role="button">
+              Pax <i class="bi" [ngClass]="sortIcon('participants')"></i>
+            </th>
+            <th (click)="setSort('amount')" role="button" class="text-end">
+              Amount <i class="bi" [ngClass]="sortIcon('amount')"></i>
+            </th>
+            <th (click)="setSort('status')" role="button">
+              Status <i class="bi" [ngClass]="sortIcon('status')"></i>
+            </th>
+            <th (click)="setSort('paymentStatus')" role="button">
+              Payment <i class="bi" [ngClass]="sortIcon('paymentStatus')"></i>
+            </th>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let booking of pagedBookings"
+              [class.selected]="selectedBookingIds.has(booking.id)"
+              (click)="openDrawer(booking)"
+              class="clickable-row">
+            <td class="col-check" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                [checked]="selectedBookingIds.has(booking.id)"
+                (change)="toggleBookingSelection(booking.id)" />
+            </td>
+            <td>
+              <div class="cell-stack">
+                <strong>#{{ booking.id }}</strong>
+                <span>{{ formatDate(booking.bookingDate) }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <strong>{{ booking.customerName }}</strong>
+                <span>{{ booking.email }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="cell-stack">
+                <strong>{{ booking.trekName }}</strong>
+                <span>{{ formatDate(booking.date) }}</span>
+              </div>
+            </td>
+            <td>{{ booking.participants }}</td>
+            <td class="text-end amount-cell">₹{{ booking.amount | number:'1.0-0' }}</td>
+            <td>
+              <span class="status-pill" [ngClass]="'status-' + getStatusColor(booking.status)">
+                {{ booking.status | titlecase }}
+              </span>
+            </td>
+            <td>
+              <div class="payment-cell">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="payment-pill" [ngClass]="'status-' + getPaymentColor(booking.paymentStatus)">
+                    <span class="status-pulse-dot" [ngClass]="booking.paymentStatus"></span>
+                    {{ (booking.paymentStatus === 'partially_refunded' ? 'Partial Refund' : booking.paymentStatus) | titlecase }}
+                  </span>
+                  <button
+                    *ngIf="booking.paymentStatus === 'pending'"
+                    type="button"
+                    class="btn-wa-reminder"
+                    (click)="sendPaymentLinkWhatsApp(booking, $event)"
+                    title="Send Payment Link via WhatsApp">
+                    <i class="bi bi-whatsapp"></i>
+                  </button>
+                </div>
+                
+                <div class="payment-meta-row" *ngIf="booking.paymentMethod || booking.transactionId">
+                  <span class="method-tag">
+                    <i class="bi" [ngClass]="getPaymentMethodIcon(booking.paymentMethod)"></i>
+                    {{ booking.paymentMethod || 'Online' }}
+                  </span>
+                  <span
+                    *ngIf="booking.transactionId"
+                    class="copyable-txn"
+                    (click)="copyTxnId(booking.transactionId, $event)"
+                    [title]="copiedTxnId === booking.transactionId ? 'Copied to clipboard!' : 'Click to copy Txn ID'">
+                    {{ booking.transactionId }}
+                    <i class="bi" [ngClass]="copiedTxnId === booking.transactionId ? 'bi-check-all text-success' : 'bi-clipboard'"></i>
+                  </span>
+                </div>
+              </div>
+            </td>
+            <td class="col-action" (click)="$event.stopPropagation()">
+              <button class="icon-btn subtle" type="button" (click)="openDrawer(booking)" title="View details">
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="table-footer">
+        <span class="page-info">Showing {{ pageLabel }}</span>
+        <div class="page-actions">
+          <button class="btn-app ghost" type="button" (click)="prevPage()" [disabled]="currentPage === 1">Prev</button>
+          <button
+            class="page-btn"
+            *ngFor="let p of pageNumbers"
+            [class.active]="p === currentPage"
+            (click)="changePage(p)">
+            {{ p }}
+          </button>
+          <button class="btn-app ghost" type="button" (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #emptyState>
+      <p class="empty">
+        No bookings found. Try adjusting your filters.
+      </p>
+    </ng-template>
+  </app-admin-shell>
+</ion-content>
+
+<!-- ════════════════════════════════════════════
+     Booking Detail Drawer
+════════════════════════════════════════════ -->
+<div class="drawer-overlay" [class.open]="isDrawerOpen" (click)="closeDrawer()"></div>
+
+<aside class="detail-drawer" [class.open]="isDrawerOpen" *ngIf="selectedBooking">
+  <div class="drawer-header">
+    <div class="drawer-title-group">
+      <span class="drawer-label">Booking</span>
+      <h2 class="drawer-title">#{{ selectedBooking.id }}</h2>
+    </div>
+    <button class="drawer-close" type="button" (click)="closeDrawer()">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <div class="drawer-body">
+
+    <!-- Status Row -->
+    <div class="drawer-status-row">
+      <span class="status-pill" [ngClass]="'status-' + getStatusColor(selectedBooking.status)">
+        {{ selectedBooking.status | titlecase }}
+      </span>
+      <span class="payment-pill" [ngClass]="'status-' + getPaymentColor(selectedBooking.paymentStatus)">
+        {{ selectedBooking.paymentStatus | titlecase }}
+      </span>
+    </div>
+
+    <!-- Customer Info -->
+    <div class="drawer-section">
+      <h4 class="drawer-section-title">
+        <i class="bi bi-person-circle"></i> Customer
+      </h4>
+      <div class="drawer-info-grid">
+        <div class="dinfo">
+          <span class="dinfo-label">Name</span>
+          <span class="dinfo-value">{{ selectedBooking.customerName }}</span>
+        </div>
+        <div class="dinfo">
+          <span class="dinfo-label">Email</span>
+          <span class="dinfo-value">{{ selectedBooking.email }}</span>
+        </div>
+        <div class="dinfo">
+          <span class="dinfo-label">Phone</span>
+          <span class="dinfo-value">{{ selectedBooking.phone || '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trek Info -->
+    <div class="drawer-section">
+      <h4 class="drawer-section-title">
+        <i class="bi bi-map"></i> Trek Details
+      </h4>
+      <div class="drawer-info-grid">
+        <div class="dinfo">
+          <span class="dinfo-label">Trek Name</span>
+          <span class="dinfo-value">{{ selectedBooking.trekName }}</span>
+        </div>
+        <div class="dinfo">
+          <span class="dinfo-label">Trek Date</span>
+          <span class="dinfo-value">{{ formatDate(selectedBooking.date) }}</span>
+        </div>
+        <div class="dinfo">
+          <span class="dinfo-label">Participants</span>
+          <span class="dinfo-value">{{ selectedBooking.participants }}</span>
+        </div>
+        <div class="dinfo">
+          <span class="dinfo-label">Booked On</span>
+          <span class="dinfo-value">{{ formatDate(selectedBooking.bookingDate) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment & Financials Info -->
+    <div class="drawer-section">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="drawer-section-title mb-0">
+          <i class="bi bi-credit-card-2-front-fill text-success"></i> Payment & Financial Ledger
+        </h4>
+        <div class="drawer-section-actions justify-content-between d-flex">
+          <button class="btn-app ghost btn-xs" type="button" (click)="openPaymentEditModal(selectedBooking)" title="Update payment details">
+            <i class="bi bi-pencil-square"></i> Edit
+          </button>
+          <button
+            class="btn-app danger-ghost btn-xs ms-1"
+            type="button"
+            *ngIf="selectedBooking.paymentStatus !== 'refunded'"
+            (click)="openRefundModal(selectedBooking)"
+            title="Issue policy-based refund">
+            <i class="bi bi-arrow-counterclockwise"></i> Refund
+          </button>
+        </div>
+      </div>
+
+      <!-- Itemized Fare Breakdown Box -->
+      <div class="fare-breakdown-card mb-3">
+        <div class="fare-row">
+          <span class="fare-label"><i class="bi bi-tree"></i> Base Trek Package (x{{ selectedBooking.participants }})</span>
+          <span class="fare-val">₹{{ getFareBreakdown(selectedBooking.amount).baseFare | number:'1.0-0' }}</span>
+        </div>
+        <div class="fare-row" *ngIf="getFareBreakdown(selectedBooking.amount).permitFee > 0">
+          <span class="fare-label"><i class="bi bi-shield-check"></i> Forest Dept Eco-Permits</span>
+          <span class="fare-val">₹{{ getFareBreakdown(selectedBooking.amount).permitFee | number:'1.0-0' }}</span>
+        </div>
+        <div class="fare-row">
+          <span class="fare-label"><i class="bi bi-receipt"></i> GST @ 5% (SAC 998555)</span>
+          <span class="fare-val">₹{{ getFareBreakdown(selectedBooking.amount).gst5 | number:'1.0-0' }}</span>
+        </div>
+        <div class="fare-divider"></div>
+        <div class="fare-row total-row">
+          <span class="fare-label">Net Booking Total</span>
+          <span class="fare-val highlight">₹{{ selectedBooking.amount | number:'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <div class="drawer-info-grid">
+        <div class="dinfo">
+          <span class="dinfo-label">Payment Method</span>
+          <span class="dinfo-value">
+            <i class="bi" [ngClass]="getPaymentMethodIcon(selectedBooking.paymentMethod)"></i>
+            {{ selectedBooking.paymentMethod || 'Online Gateway' }}
+          </span>
+        </div>
+        <div class="dinfo">
+          <span class="dinfo-label">Payment Status</span>
+          <span class="dinfo-value">
+            <span class="payment-pill" [ngClass]="'status-' + getPaymentColor(selectedBooking.paymentStatus)">
+              <span class="status-pulse-dot" [ngClass]="selectedBooking.paymentStatus"></span>
+              {{ selectedBooking.paymentStatus | titlecase }}
+            </span>
+          </span>
+        </div>
+        <div class="dinfo" *ngIf="selectedBooking.transactionId">
+          <span class="dinfo-label">Transaction / UTR ID</span>
+          <span class="dinfo-value mono copyable-txn" (click)="copyTxnId(selectedBooking.transactionId, $event)" title="Click to copy">
+            {{ selectedBooking.transactionId }}
+            <i class="bi" [ngClass]="copiedTxnId === selectedBooking.transactionId ? 'bi-check-all text-success' : 'bi-clipboard'"></i>
+          </span>
+        </div>
+        <div class="dinfo" *ngIf="selectedBooking.phone">
+          <span class="dinfo-label">1-Click Payment Link</span>
+          <span class="dinfo-value">
+            <button class="btn-app ghost btn-xs text-success" type="button" (click)="sendPaymentLinkWhatsApp(selectedBooking, $event)">
+              <i class="bi bi-whatsapp"></i> Send on WhatsApp
+            </button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="drawer-footer">
+    <button class="btn-app primary" type="button" (click)="openPassModal(selectedBooking)">
+      <i class="bi bi-file-earmark-text"></i>
+      Invoice & Trek Pass
+    </button>
+    <button class="btn-app secondary" type="button" (click)="openManifestModal(selectedBooking)">
+      <i class="bi bi-file-earmark-person-fill"></i>
+      Forest Dept Manifest
+    </button>
+    <button
+      class="btn-app danger"
+      type="button"
+      *ngIf="selectedBooking.paymentStatus !== 'refunded'"
+      (click)="openRefundModal(selectedBooking)">
+      <i class="bi bi-arrow-counterclockwise"></i>
+      Process Refund
+    </button>
+    <button class="btn-app ghost" type="button" (click)="closeDrawer()">Close</button>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════════════
+     Interactive Refund Processing Modal (Cancellation Policy Engine)
+════════════════════════════════════════════ -->
+<ion-modal [isOpen]="showRefundModal" (didDismiss)="closeRefundModal()" cssClass="refund-modal">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="light">
+        <ion-title>
+          <i class="bi bi-arrow-counterclockwise text-danger me-1"></i>
+          Cancellation Policy & Refund Engine
+        </ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeRefundModal()">
+            <i class="bi bi-x-lg"></i>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="modal-form-content" *ngIf="refundBooking">
+      <div class="refund-container">
+        <!-- Booking Overview Card -->
+        <div class="refund-summary-card">
+          <div class="summary-top">
+            <div>
+              <span class="ref-label">Booking Reference</span>
+              <h3 class="ref-id">#{{ refundBooking.id }}</h3>
+              <p class="ref-sub">
+                <i class="bi bi-person-fill text-muted"></i> {{ refundBooking.customerName }} &bull;
+                <i class="bi bi-compass text-muted"></i> {{ refundBooking.trekName }}
+              </p>
+              <div class="ref-countdown-badge">
+                <i class="bi bi-calendar-event"></i>
+                <span>Trek Date: {{ formatDate(refundBooking.date) }} ({{ getDaysUntilTrek(refundBooking) }} days to departure)</span>
+              </div>
+            </div>
+            <div class="text-end">
+              <span class="ref-label">Gross Value</span>
+              <h2 class="ref-amount">₹{{ refundBooking.amount | number:'1.0-0' }}</h2>
+              <span class="badge bg-light text-dark">{{ refundBooking.paymentMethod || 'Online Payment' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-Tier Policy Selection Cards -->
+        <div class="policy-tier-section mb-3">
+          <label class="form-label font-weight-bold">Select Cancellation / Refund Policy Tier</label>
+          <div class="policy-tier-cards">
+            <!-- Tier 1: Standard Policy -->
+            <div
+              class="tier-card"
+              [class.active]="refundPolicyMode === 'policy'"
+              (click)="applyPolicyMode('policy')">
+              <div class="tier-card-header">
+                <span class="tier-badge policy">Standard Policy</span>
+                <span class="tier-pct">{{ getPolicyRefundPercentage(refundBooking) }}% Refund</span>
+              </div>
+              <p class="tier-desc">
+                Auto-calculated for {{ getDaysUntilTrek(refundBooking) }} days before trek:
+                <strong *ngIf="getDaysUntilTrek(refundBooking) >= 15">90% refund (10% permit retention)</strong>
+                <strong *ngIf="getDaysUntilTrek(refundBooking) >= 7 && getDaysUntilTrek(refundBooking) < 15">50% refund</strong>
+                <strong *ngIf="getDaysUntilTrek(refundBooking) < 7">0% refund (&lt;7 days)</strong>
+              </p>
+            </div>
+
+            <!-- Tier 2: 100% Full Admin Waiver -->
+            <div
+              class="tier-card"
+              [class.active]="refundPolicyMode === 'full'"
+              (click)="applyPolicyMode('full')">
+              <div class="tier-card-header">
+                <span class="tier-badge full">100% Full Waiver</span>
+                <span class="tier-pct">100% Refund</span>
+              </div>
+              <p class="tier-desc">Special admin override: Weather alert, Forest dept closure, or trip cancelled by org.</p>
+            </div>
+
+            <!-- Tier 3: Custom Partial -->
+            <div
+              class="tier-card"
+              [class.active]="refundPolicyMode === 'custom'"
+              (click)="applyPolicyMode('custom')">
+              <div class="tier-card-header">
+                <span class="tier-badge custom">Custom Amount</span>
+                <span class="tier-pct">Manual</span>
+              </div>
+              <p class="tier-desc">Specify an arbitrary settlement or compensation amount with custom reason.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Financial Settlement Breakdown Box -->
+        <div class="settlement-breakdown-box mb-3">
+          <h5 class="breakdown-title"><i class="bi bi-calculator-fill text-accent"></i> Financial Settlement Summary</h5>
+          <div class="breakdown-row">
+            <span>Gross Booking Amount</span>
+            <strong>₹{{ refundBooking.amount | number:'1.0-0' }}</strong>
+          </div>
+          <div class="breakdown-row text-danger">
+            <span>Less: Cancellation Charges / Retained Fee</span>
+            <strong>-₹{{ refundForm.deduction | number:'1.0-0' }}</strong>
+          </div>
+          <div class="breakdown-divider"></div>
+          <div class="breakdown-row net-payout">
+            <span>Net Customer Refund Payout</span>
+            <span class="payout-amount">₹{{ refundForm.amount | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Refund Form -->
+        <form (ngSubmit)="submitRefund()" class="refund-form">
+          <div class="form-group mb-3" *ngIf="refundPolicyMode === 'custom'">
+            <label class="form-label font-weight-bold">Custom Refund Amount (₹)</label>
+            <div class="input-prefix-wrapper">
+              <span class="prefix">₹</span>
+              <input
+                type="number"
+                class="form-control amount-input"
+                name="amount"
+                [(ngModel)]="refundForm.amount"
+                (ngModelChange)="onCustomAmountChange()"
+                [max]="refundBooking.amount"
+                min="1"
+                required
+              />
+            </div>
+            <small class="text-muted">Maximum allowable refund: ₹{{ refundBooking.amount }}</small>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label font-weight-bold">Reason for Cancellation</label>
+              <select class="form-select" name="reason" [(ngModel)]="refundForm.reason">
+                <option *ngFor="let opt of refundReasonOptions" [value]="opt">{{ opt }}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label font-weight-bold">Refund Destination Channel</label>
+              <select class="form-select" name="refundMethod" [(ngModel)]="refundForm.refundMethod">
+                <option *ngFor="let opt of refundMethodOptions" [value]="opt">{{ opt }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label font-weight-bold mb-0">Refund Reference / Transaction ID</label>
+              <button type="button" class="btn btn-link btn-xs text-decoration-none p-0" (click)="generateRefundRef()">
+                <i class="bi bi-arrow-repeat"></i> Regenerate Ref
+              </button>
+            </div>
+            <input
+              type="text"
+              class="form-control mono"
+              name="refundTxnId"
+              [(ngModel)]="refundForm.refundTxnId"
+              placeholder="e.g. REF-GWK-891023-492"
+              required
+            />
+          </div>
+
+          <div class="form-group mb-4">
+            <label class="form-label font-weight-bold">Ops & Audit Log Note</label>
+            <textarea
+              class="form-control"
+              name="note"
+              rows="2"
+              [(ngModel)]="refundForm.note"
+              placeholder="Internal record / customer communication notes..."
+            ></textarea>
+          </div>
+
+          <div class="modal-form-actions">
+            <button
+              type="button"
+              class="btn-app ghost"
+              (click)="closeRefundModal()"
+              [disabled]="isProcessingRefund">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn-app danger"
+              [disabled]="isProcessingRefund || refundForm.amount <= 0">
+              <i class="bi bi-arrow-counterclockwise me-1" [class.spin]="isProcessingRefund"></i>
+              {{ isProcessingRefund ? 'Processing Refund...' : 'Authorize & Issue Refund (₹' + (refundForm.amount | number:'1.0-0') + ')' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- ════════════════════════════════════════════
+     Update Payment Details Modal (Professional Enterprise)
+════════════════════════════════════════════ -->
+<ion-modal [isOpen]="showPaymentEditModal" (didDismiss)="closePaymentEditModal()" cssClass="payment-edit-modal">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="light">
+        <ion-title>
+          <i class="bi bi-credit-card-2-front text-success me-1"></i>
+          Record & Reconcile Payment
+        </ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closePaymentEditModal()">
+            <i class="bi bi-x-lg"></i>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="modal-form-content" *ngIf="paymentEditBooking">
+      <div class="refund-container">
+        <div class="refund-summary-card">
+          <div class="summary-top">
+            <div>
+              <span class="ref-label">Booking</span>
+              <h3 class="ref-id">#{{ paymentEditBooking.id }}</h3>
+              <p class="ref-sub">{{ paymentEditBooking.customerName }} &bull; {{ paymentEditBooking.trekName }}</p>
+            </div>
+            <div class="text-end">
+              <span class="ref-label">Booking Value</span>
+              <h2 class="ref-amount">₹{{ paymentEditBooking.amount | number:'1.0-0' }}</h2>
+            </div>
+          </div>
+        </div>
+
+        <form (ngSubmit)="submitPaymentUpdate()" class="refund-form">
+          <div class="form-group mb-3">
+            <label class="form-label font-weight-bold">Payment Status</label>
+            <select class="form-select" name="paymentStatus" [(ngModel)]="paymentEditForm.paymentStatus">
+              <option value="paid">Paid (Confirmed &amp; Settled)</option>
+              <option value="pending">Pending (Awaiting Customer Payment)</option>
+              <option value="refunded">Refunded (Cancelled &amp; Returned)</option>
+              <option value="partially_refunded">Partially Refunded</option>
+              <option value="failed">Failed / Declined</option>
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label font-weight-bold">Payment Method</label>
+            <select class="form-select" name="paymentMethod" [(ngModel)]="paymentEditForm.paymentMethod">
+              <option *ngFor="let m of supportedPaymentMethods" [value]="m">{{ m }}</option>
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label font-weight-bold mb-0">Transaction / UTR / Order Reference ID</label>
+              <button type="button" class="btn btn-link btn-xs text-decoration-none p-0" (click)="generateMockUtr()">
+                <i class="bi bi-magic"></i> Auto-Generate UTR
+              </button>
+            </div>
+            <input
+              type="text"
+              class="form-control mono"
+              name="transactionId"
+              [(ngModel)]="paymentEditForm.transactionId"
+              placeholder="e.g. UPI/529104829104 or pay_Qx91kd82j"
+              required
+            />
+          </div>
+
+          <div class="form-group mb-4">
+            <label class="form-label font-weight-bold">Settled / Collected Amount (₹)</label>
+            <div class="input-prefix-wrapper">
+              <span class="prefix">₹</span>
+              <input
+                type="number"
+                class="form-control amount-input"
+                name="amount"
+                [(ngModel)]="paymentEditForm.amount"
+                min="0"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="modal-form-actions">
+            <button
+              type="button"
+              class="btn-app ghost"
+              (click)="closePaymentEditModal()"
+              [disabled]="isUpdatingPayment">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn-app primary"
+              [disabled]="isUpdatingPayment">
+              <i class="bi bi-check-circle me-1" [class.spin]="isUpdatingPayment"></i>
+              {{ isUpdatingPayment ? 'Reconciling...' : 'Save & Reconcile Payment' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- ════════════════════════════════════════════
+     Printable Trek Pass & Tax Invoice Modal
+════════════════════════════════════════════ -->
+<ion-modal [isOpen]="showPassModal" (didDismiss)="closePassModal()" cssClass="invoice-modal">
+  <ng-template>
+    <ion-header class="no-print">
+      <ion-toolbar>
+        <ion-title>Customer Trek Pass & Tax Invoice</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="printPass()" color="primary">
+            <i class="bi bi-printer-fill me-1"></i> Print / PDF
+          </ion-button>
+          <ion-button (click)="closePassModal()">
+            <i class="bi bi-x-lg"></i>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="invoice-content" *ngIf="passBooking">
+      <div class="invoice-document" id="printable-invoice">
+        <!-- Pass Header -->
+        <div class="inv-header">
+          <div class="inv-brand">
+            <img src="/assets/assets/logo.png" alt="goWILD Karunadu" class="inv-logo" />
+            <div>
+              <h1 class="inv-title">goWILD™ Karunadu</h1>
+              <p class="inv-tagline">Eco-Treks & Wilderness Expeditions Karnataka</p>
+              <small class="inv-gst">GSTIN: 29AAACG0123M1Z8 | Forest Dept Reg: KA-ECO-2024-884</small>
+            </div>
+          </div>
+          <div class="inv-pass-badge">
+            <span class="pass-tag">OFFICIAL TREK PASS</span>
+            <div class="pass-number">PASS #GWK-{{ passBooking.id.slice(-6).toUpperCase() }}</div>
+            <span class="pass-status" [ngClass]="'status-' + getStatusColor(passBooking.status)">
+              {{ passBooking.status | uppercase }}
+            </span>
+          </div>
+        </div>
+
+        <hr class="inv-divider" />
+
+        <!-- Key Meta Grid -->
+        <div class="inv-meta-grid">
+          <div class="inv-meta-item">
+            <span class="meta-label">Booking Reference</span>
+            <span class="meta-val mono">#{{ passBooking.id }}</span>
+          </div>
+          <div class="inv-meta-item">
+            <span class="meta-label">Trek Expedition Date</span>
+            <span class="meta-val highlight">{{ formatDate(passBooking.date) }}</span>
+          </div>
+          <div class="inv-meta-item">
+            <span class="meta-label">Reporting Time & Basecamp</span>
+            <span class="meta-val">06:00 AM • Designated Basecamp</span>
+          </div>
+          <div class="inv-meta-item">
+            <span class="meta-label">Booking Issue Date</span>
+            <span class="meta-val">{{ formatDate(passBooking.bookingDate) }}</span>
+          </div>
+        </div>
+
+        <!-- Trek & Lead Participant Details -->
+        <div class="inv-two-col">
+          <div class="inv-box">
+            <h3 class="inv-box-title"><i class="bi bi-map-fill"></i> Trek Expedition Details</h3>
+            <div class="inv-row">
+              <span class="label">Expedition:</span>
+              <span class="val bold">{{ passBooking.trekName }}</span>
+            </div>
+            <div class="inv-row">
+              <span class="label">Total Trekkers:</span>
+              <span class="val bold">{{ passBooking.participants }} Participant(s)</span>
+            </div>
+            <div class="inv-row">
+              <span class="label">Safety Desk / Helpline:</span>
+              <span class="val">+91 94800 12345 (24/7 Operations)</span>
+            </div>
+          </div>
+
+          <div class="inv-box">
+            <h3 class="inv-box-title"><i class="bi bi-person-badge-fill"></i> Primary Booker Details</h3>
+            <div class="inv-row">
+              <span class="label">Lead Booker:</span>
+              <span class="val bold">{{ passBooking.customerName }}</span>
+            </div>
+            <div class="inv-row">
+              <span class="label">Contact Email:</span>
+              <span class="val">{{ passBooking.email }}</span>
+            </div>
+            <div class="inv-row">
+              <span class="label">Contact Phone:</span>
+              <span class="val">{{ passBooking.phone || 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoice Breakdown Table -->
+        <div class="inv-table-section">
+          <h3 class="inv-box-title"><i class="bi bi-receipt"></i> Tax Invoice & Fare Breakdown</h3>
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="text-center">Qty</th>
+                <th class="text-end">Unit Price (₹)</th>
+                <th class="text-end">Total (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <strong>{{ passBooking.trekName }} — Guided Trek Package</strong>
+                  <div class="small-sub">Forest entry permit, certified wilderness guide, safety gear & meals</div>
+                </td>
+                <td class="text-center">{{ passBooking.participants }}</td>
+                <td class="text-end">{{ (passBooking.amount / (passBooking.participants || 1)) | number:'1.2-2' }}</td>
+                <td class="text-end">{{ passBooking.amount | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="text-end bold">Subtotal (Inclusive of Permits & Taxes)</td>
+                <td class="text-end bold">₹{{ passBooking.amount | number:'1.2-2' }}</td>
+              </tr>
+              <tr class="inv-total-row">
+                <td colspan="3" class="text-end">
+                  <strong>Total Amount Paid</strong>
+                  <div class="small-sub">Payment Method: {{ passBooking.paymentMethod || 'Online / Gateway' }} (Status: {{ passBooking.paymentStatus | uppercase }})</div>
+                  <div *ngIf="passBooking.paymentStatus === 'refunded'" class="refund-stamp text-danger">
+                    <i class="bi bi-arrow-counterclockwise"></i> TRANSACTION FULLY REFUNDED TO CUSTOMER
+                  </div>
+                  <div *ngIf="passBooking.paymentStatus === 'partially_refunded'" class="refund-stamp text-warning">
+                    <i class="bi bi-arrow-counterclockwise"></i> PARTIALLY REFUNDED
+                  </div>
+                </td>
+                <td class="text-end total-amount">
+                  <span [class.strikethrough]="passBooking.paymentStatus === 'refunded'">
+                    ₹{{ passBooking.amount | number:'1.2-2' }}
+                  </span>
+                  <div *ngIf="passBooking.paymentStatus === 'refunded'" class="text-danger small-sub">₹0.00 (Refunded)</div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Guidelines & Verification Foot -->
+        <div class="inv-footer-section">
+          <div class="inv-guidelines">
+            <h4><i class="bi bi-shield-check"></i> Important Expedition Guidelines</h4>
+            <ul>
+              <li>Carry a valid Govt. Photo ID (Aadhaar / Driving License / Voter ID) for forest checkpoint verification.</li>
+              <li>Strictly Zero-Litter Zone: All plastic wrappers and bottles must be packed back in personal backpacks.</li>
+              <li>Consumption of alcohol or smoking is strictly prohibited during the trek.</li>
+            </ul>
+          </div>
+          <div class="inv-qr-badge">
+            <div class="qr-box">
+              <i class="bi bi-qr-code"></i>
+              <span>SCAN AT BASECAMP</span>
+            </div>
+            <small class="stamp">VERIFIED BY GOWILD OPS</small>
+          </div>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- ════════════════════════════════════════════
+     Forest Department Entry Manifest & Medical Roster Modal
+════════════════════════════════════════════ -->
+<ion-modal [isOpen]="showManifestModal" (didDismiss)="closeManifestModal()" cssClass="manifest-modal">
+  <ng-template>
+    <ion-header class="no-print">
+      <ion-toolbar color="light">
+        <ion-title>
+          <i class="bi bi-file-earmark-person-fill text-success me-1"></i>
+          Forest Dept Entry Manifest & Medical Roster
+        </ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="printManifest()" color="primary">
+            <i class="bi bi-printer-fill me-1"></i> Print Official Manifest
+          </ion-button>
+          <ion-button (click)="closeManifestModal()">
+            <i class="bi bi-x-lg"></i>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="modal-form-content" *ngIf="manifestBooking">
+      <div class="manifest-container" id="printable-manifest">
+        <!-- Official Government Header -->
+        <div class="manifest-gov-header">
+          <div class="gov-title-group">
+            <h2 class="gov-title">KARNATAKA FOREST DEPARTMENT &bull; ECO-TOURISM EXPEDITION MANIFEST</h2>
+            <p class="gov-sub">Official Permitted Trekker Verification & Medical Declaration Form (Reg: KA-ECO-2024-884)</p>
+          </div>
+          <div class="manifest-meta-badge">
+            <div class="meta-line"><strong>Booking:</strong> #{{ manifestBooking.id }}</div>
+            <div class="meta-line"><strong>Expedition:</strong> {{ manifestBooking.trekName }}</div>
+            <div class="meta-line"><strong>Date:</strong> {{ formatDate(manifestBooking.date) }}</div>
+            <div class="meta-line"><strong>Total Trekkers:</strong> {{ participantsList.length }} Permitted</div>
+          </div>
+        </div>
+
+        <!-- Action bar -->
+        <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+          <span class="text-muted small">All dropdown choices are loaded dynamically from the backend registry.</span>
+          <button type="button" class="btn-app ghost btn-xs" (click)="addParticipantRow()">
+            <i class="bi bi-plus-circle me-1"></i> Add Co-Trekker
+          </button>
+        </div>
+
+        <!-- Participants Table Editor -->
+        <div class="table-responsive manifest-table-wrap mb-4">
+          <table class="table table-bordered manifest-table align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th style="min-width: 160px;">Full Name (As on Govt ID)</th>
+                <th style="width: 70px;">Age</th>
+                <th style="width: 100px;">Gender</th>
+                <th style="min-width: 140px;">Govt ID Type</th>
+                <th style="min-width: 130px;">ID Number</th>
+                <th style="width: 90px;">Blood Group</th>
+                <th style="min-width: 170px;">Medical Declarations</th>
+                <th style="min-width: 130px;">Emergency Phone</th>
+                <th style="min-width: 120px;">Diet</th>
+                <th style="width: 50px;" class="no-print">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of participantsList; let i = index">
+                <td class="text-center font-weight-bold">{{ i + 1 }}</td>
+                <td>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="p.fullName" placeholder="Full legal name" required />
+                </td>
+                <td>
+                  <input type="number" class="form-control form-control-sm" [(ngModel)]="p.age" min="10" max="80" />
+                </td>
+                <td>
+                  <select class="form-select form-select-sm" [(ngModel)]="p.gender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </td>
+                <td>
+                  <select class="form-select form-select-sm" [(ngModel)]="p.govtIdType">
+                    <option *ngFor="let opt of govtIdTypeOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </td>
+                <td>
+                  <input type="text" class="form-control form-control-sm mono" [(ngModel)]="p.govtIdNumber" placeholder="XXXX-XXXX-XXXX" />
+                </td>
+                <td>
+                  <select class="form-select form-select-sm" [(ngModel)]="p.bloodGroup">
+                    <option *ngFor="let opt of bloodGroupOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </td>
+                <td>
+                  <select class="form-select form-select-sm" [(ngModel)]="p.medicalConditions" [class.text-danger]="p.medicalConditions && !p.medicalConditions.includes('Fit to Trek')">
+                    <option *ngFor="let opt of medicalConditionOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </td>
+                <td>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="p.emergencyContactPhone" placeholder="+91 9XXXX XXXXX" />
+                </td>
+                <td>
+                  <select class="form-select form-select-sm" [(ngModel)]="p.dietaryPreference">
+                    <option *ngFor="let opt of dietaryOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </td>
+                <td class="no-print text-center">
+                  <button type="button" class="btn btn-sm btn-outline-danger p-1" (click)="removeParticipantRow(i)" [disabled]="participantsList.length <= 1" title="Remove">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Official Sign-off & Verification Block (Printed on paper) -->
+        <div class="manifest-signoff-grid">
+          <div class="signoff-box">
+            <p class="sign-role">Certified Wilderness Guide / Trek Lead</p>
+            <div class="sign-line"></div>
+            <small>Name: ______________________ &bull; Sign & Date</small>
+          </div>
+          <div class="signoff-box">
+            <p class="sign-role">Forest Department Checkpost Officer / Ranger</p>
+            <div class="sign-line"></div>
+            <small>Checkpoint: ___________________ &bull; Official Seal</small>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="modal-form-actions no-print mt-3">
+          <button type="button" class="btn-app ghost" (click)="closeManifestModal()" [disabled]="isSavingParticipants">
+            Cancel
+          </button>
+          <button type="button" class="btn-app primary" (click)="saveManifest()" [disabled]="isSavingParticipants">
+            <i class="bi bi-check-circle me-1" [class.spin]="isSavingParticipants"></i>
+            {{ isSavingParticipants ? 'Saving Manifest...' : 'Save & Sync Manifest' }}
+          </button>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

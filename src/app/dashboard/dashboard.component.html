@@ -1,0 +1,306 @@
+<ion-content class="dash-page">
+  <app-admin-shell
+    sectionLabel="Overview"
+    title="Dashboard"
+    subtitle="Real-time snapshots of treks, bookings, and operations.">
+
+    <section class="stats-grid">
+      <div class="stat-card" *ngFor="let stat of stats" [class.disabled]="stat.disabled"
+        [title]="stat.disabled ? ('Disabled: ' + stat.note) : (stat.title + ': ' + (stat.isCurrency ? (stat.value | currency:'INR':'symbol':'1.0-0') : stat.value) + ' (' + stat.change + ')') "
+        [attr.aria-disabled]="stat.disabled" role="button" (click)="onCardClick(stat)">
+        <div class="stat-icon" [ngClass]="'tone-' + stat.color">
+          <i class="bi" [ngClass]="'bi-' + stat.icon"></i>
+        </div>
+        <div class="stat-copy">
+          <div class="stat-top">
+            <div>
+              <h3>
+                {{ stat.isCurrency
+                ? (stat.value | currency:'INR':'symbol':'1.0-0')
+                : stat.value }}
+              </h3>
+              <span>{{ stat.title }}</span>
+            </div>
+            <div class="stat-trend" [ngClass]="stat.trend">
+              <i class="bi" [ngClass]="stat.trend === 'up' ? 'bi-arrow-up-right' : 'bi-arrow-down-right'"></i>
+              <strong>{{ stat.change }}</strong>
+            </div>
+          </div>
+          <p class="stat-note">{{ stat.note }} · {{ stat.changeLabel }}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="charts-section">
+      <div class="section-head">
+        <div>
+          <h2>Performance Charts</h2>
+          <p>Bookings, revenue, cancellation trends, and top trek contribution.</p>
+        </div>
+        <span class="chart-note">{{ monthlyGrowthLabel === 'N/A' ? 'Growth data unavailable' : 'Growth ' + monthlyGrowthLabel }}</span>
+      </div>
+
+      <div class="charts-grid">
+        <article class="chart-card chart-card-wide">
+          <div class="chart-card-head">
+            <div>
+              <h3>Bookings vs Revenue</h3>
+              <p>Monthly trend across the current revenue cycle.</p>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas #bookingsRevenueChart></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <h3>Top Treks</h3>
+              <p>Revenue contribution by trek.</p>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas #trekRevenueChart></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <h3>Cancellations</h3>
+              <p>Cancelled bookings by month.</p>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas #cancellationChart></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card chart-card-wide">
+          <div class="chart-card-head">
+            <div>
+              <h3>Monthly Growth</h3>
+              <p>Revenue growth percentage month over month.</p>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas #growthChart></canvas>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="quick-actions">
+      <div class="section-head">
+        <h2>Quick Actions</h2>
+      </div>
+      <div class="actions-grid">
+        <button class="action-card" *ngFor="let action of quickActions" type="button" (click)="openQuickAction(action.route)">
+          <div class="action-icon" [ngClass]="'tone-' + action.color">
+            <i class="bi" [ngClass]="'bi-' + action.icon"></i>
+          </div>
+          <div>
+            <small>{{ action.label }}</small>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <section class="bookings-section">
+      <div class="section-head row">
+        <div>
+          <h2>Recent Bookings</h2>
+          <p>Track the latest activity across treks.</p>
+        </div>
+        <div class="d-flex justify-content-end align-items-center">
+          <button class="btn-app ghost " (click)="toggleViewAll()">
+            {{ showAllBookings ? 'Hide' : 'View all' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Booking ID</th>
+              <th>Customer</th>
+              <th>Trek</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let booking of recentBooking; let i = index" class="clickable-row" (click)="openBookingModal(booking)">
+              <td>#{{ booking.id }}</td>
+              <td>{{ booking.customerName }}</td>
+              <td>{{ booking.trekName }}</td>
+              <td> {{ booking.bookingDate | date: 'dd MMM yyyy' }}</td>
+              <td class="fw-bold">₹{{ booking.amount }}</td>
+              <td>
+                <span class="status-pill" [ngClass]="'status-' + getStatusColor(booking.status)">
+                  {{ booking.status }}
+                </span>
+              </td>
+              <td>
+                <button class="icon-btn subtle" (click)="$event.stopPropagation(); openBookingModal(booking)" type="button" title="View details">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards">
+        <div class="surface-card booking-card" *ngFor="let booking of recentBooking; let i = index" (click)="openBookingModal(booking)">
+          <div class="booking-top">
+            <span class="fw-semibold">#{{ booking.id }}</span>
+            <span class="status-pill" [ngClass]="'status-' + getStatusColor(booking.status)">
+              {{ booking.status }}
+            </span>
+          </div>
+          <h6>{{ booking.trekName }}</h6>
+          <small>{{ booking.bookingDate | date: 'dd MMM yyyy' }}</small>
+          <div class="booking-meta">
+            <span>₹{{ booking.amount }}</span>
+            <button class="icon-btn subtle" (click)="$event.stopPropagation(); openBookingModal(booking)" type="button">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="showAllBookings" class="bookings-expanded">
+        <div class="filters-bar">
+          <div class="search-field">
+            <i class="bi bi-search"></i>
+            <input type="text" [(ngModel)]="searchQuery" placeholder="Search by name, trek, email, phone..." />
+          </div>
+          <div class="filter-group">
+            <label>Status</label>
+            <select [(ngModel)]="statusFilter">
+              <option *ngFor="let opt of bookingStatusOptions" [value]="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Rows</label>
+            <select [(ngModel)]="pageSize">
+              <option *ngFor="let size of rowOptions" [ngValue]="size">{{ size }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap expanded-table">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Customer</th>
+                <th>Trek</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let booking of pagedBookings" class="clickable-row" (click)="openBookingModal(booking)">
+                <td>#{{ booking.id }}</td>
+                <td>{{ booking.customerName }}</td>
+                <td>{{ booking.trekName }}</td>
+                <td>{{ booking.bookingDate | date: 'dd MMM yyyy' }}</td>
+                <td class="fw-bold">₹{{ booking.amount }}</td>
+                <td>
+                  <span class="status-pill" [ngClass]="'status-' + getStatusColor(booking.status)">
+                    {{ booking.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination-bar">
+            <span class="page-info">
+              Showing {{ pagedBookings.length }} of {{ filteredBookings.length }}
+            </span>
+            <div class="page-actions">
+              <button class="btn-app ghost" (click)="prevPage()" [disabled]="currentPage === 1">Prev</button>
+              <button
+                class="page-btn"
+                *ngFor="let p of pageNumbers"
+                [class.active]="p === currentPage"
+                (click)="setPage(p)">
+                {{ p }}
+              </button>
+              <button class="btn-app ghost" (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+            </div>
+            <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </app-admin-shell>
+</ion-content>
+
+<!-- Modern Booking Detail Modal -->
+<div *ngIf="selectedBooking" class="modal-backdrop-custom" (click)="closeDetails()">
+  <div class="modal-dialog-custom" (click)="$event.stopPropagation()">
+    <div class="modal-header-custom">
+      <div>
+        <h3 class="modal-title-custom">
+          Booking #{{ selectedBooking.id }}
+        </h3>
+        <span class="status-pill" [ngClass]="'status-' + getStatusColor(selectedBooking.status)">
+          {{ selectedBooking.status | titlecase }}
+        </span>
+      </div>
+      <button type="button" class="btn-close-custom" (click)="closeDetails()">&times;</button>
+    </div>
+
+    <div class="modal-body-custom">
+      <div class="detail-summary-card">
+        <div class="summary-trek">{{ selectedBooking.trekName }}</div>
+        <div class="summary-amount">₹{{ selectedBooking.amount }}</div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-label">Customer Name</span>
+          <span class="detail-value">{{ selectedBooking.customerName }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Email</span>
+          <span class="detail-value">{{ selectedBooking.email || '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Phone</span>
+          <span class="detail-value">{{ selectedBooking.phone || '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Booking Date</span>
+          <span class="detail-value">{{ selectedBooking.bookingDate | date:'dd MMM yyyy' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Participants</span>
+          <span class="detail-value">{{ selectedBooking.participants || 1 }} person(s)</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Payment Status</span>
+          <span class="detail-value text-capitalize">{{ selectedBooking.paymentStatus || 'Pending' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer-custom">
+      <button class="btn-app ghost" type="button" (click)="closeDetails()">Close</button>
+      <button class="btn-app" type="button" (click)="goToBookingsPage()">
+        <i class="bi bi-box-arrow-up-right"></i> Open in Bookings
+      </button>
+    </div>
+  </div>
+</div>

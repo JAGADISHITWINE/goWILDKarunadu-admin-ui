@@ -1,0 +1,351 @@
+<ion-content>
+<app-admin-shell
+  title="Brand & System Settings"
+  subtitle="Configure dynamic brand name, support contacts, emails, and entity details across all user apps and operations"
+  sectionLabel="Configuration">
+
+  <div class="settings-container">
+    
+    <!-- Alerts -->
+    <div class="alert-box success" *ngIf="successMessage">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>{{ successMessage }}</span>
+    </div>
+    <div class="alert-box error" *ngIf="errorMessage">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="settings-grid">
+      
+      <!-- Left Column: Form Fields -->
+      <div class="form-column">
+
+        <!-- 1. Brand Identity Card -->
+        <div class="card-box">
+          <div class="card-header">
+            <div class="header-icon"><i class="bi bi-tag-fill"></i></div>
+            <div>
+              <h3>Brand Identity</h3>
+              <p>Primary trade name and regional labels displayed across header, footer, and emails</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group col-7">
+                <label>Brand Name <span class="req">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="settings.brandName"
+                  placeholder="e.g. goWILD Karunadu"
+                />
+                <small class="helper-text">Used on navbar, copyright, email subjects, and summit certificates</small>
+              </div>
+              <div class="form-group col-5">
+                <label>Regional / Kannada Subtitle</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="settings.brandSubtitle"
+                  placeholder="e.g. ಕರುನಾಡು"
+                />
+                <small class="helper-text">Displayed underneath the logo</small>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Tagline / Motto</label>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="settings.brandTagline"
+                placeholder="e.g. Wilderness Expeditions & Western Ghats Trails"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Support & Contact Channels Card -->
+        <div class="card-box">
+          <div class="card-header">
+            <div class="header-icon"><i class="bi bi-telephone-fill"></i></div>
+            <div>
+              <h3>Support & Contact Channels</h3>
+              <p>Customer helpdesk numbers and emails displayed on top bar, footer, and receipts</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label>Primary Support Phone <span class="req">*</span></label>
+                <div class="input-with-icon">
+                  <i class="bi bi-telephone"></i>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="settings.supportPhone"
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+                <small class="helper-text">Displayed on header bar, footer, and call links</small>
+              </div>
+
+              <div class="form-group col-6">
+                <label>WhatsApp Support Number <span class="req">*</span></label>
+                <div class="input-with-icon">
+                  <i class="bi bi-whatsapp"></i>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="settings.whatsappNumber"
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+                <small class="helper-text">Powers floating WhatsApp button and chat links</small>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label>Primary Support Email <span class="req">*</span></label>
+                <div class="input-with-icon">
+                  <i class="bi bi-envelope"></i>
+                  <input
+                    type="email"
+                    class="form-control"
+                    [(ngModel)]="settings.supportEmail"
+                    placeholder="info@gowildkarunadu.com"
+                  />
+                </div>
+                <small class="helper-text">Recipients can reply to this email for customer support</small>
+              </div>
+
+              <div class="form-group col-6">
+                <label>Headquarters / Base Location</label>
+                <div class="input-with-icon">
+                  <i class="bi bi-geo-alt"></i>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="settings.contactLocation"
+                    placeholder="Bengaluru, Karnataka"
+                  />
+                </div>
+                <small class="helper-text">Displayed on navbar top contact strip</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Legal & Business Entity Card -->
+        <div class="card-box">
+          <div class="card-header">
+            <div class="header-icon"><i class="bi bi-shield-check"></i></div>
+            <div>
+              <h3>Legal & Business Entity</h3>
+              <p>Registered enterprise details appearing on official tax invoices and booking passes</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group col-7">
+                <label>Full Legal Entity Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="settings.legalName"
+                  placeholder="e.g. goWILD Karunadu Eco-Adventures Pvt Ltd"
+                />
+              </div>
+              <div class="form-group col-5">
+                <label>GSTIN Number</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="settings.gstin"
+                  placeholder="e.g. 29AAGCW9123K1Z8"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Official Registered Address</label>
+              <textarea
+                class="form-control"
+                rows="2"
+                [(ngModel)]="settings.address"
+                placeholder="Street address, city, state and PIN code"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Social Media Links Card -->
+        <div class="card-box">
+          <div class="card-header">
+            <div class="header-icon"><i class="bi bi-share-fill"></i></div>
+            <div>
+              <h3>Social Media Links</h3>
+              <p>Public channel URLs linked from the site footer and confirmation emails</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label><i class="bi bi-instagram me-1"></i> Instagram Profile URL</label>
+              <input
+                type="url"
+                class="form-control"
+                [(ngModel)]="settings.socialInstagram"
+                placeholder="https://instagram.com/gowildkarunadu"
+              />
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-facebook me-1"></i> Facebook Page URL</label>
+              <input
+                type="url"
+                class="form-control"
+                [(ngModel)]="settings.socialFacebook"
+                placeholder="https://facebook.com/gowildkarunadu"
+              />
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-youtube me-1"></i> YouTube Channel URL</label>
+              <input
+                type="url"
+                class="form-control"
+                [(ngModel)]="settings.socialYoutube"
+                placeholder="https://youtube.com/@gowildkarunadu"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. About Blurb Card -->
+        <div class="card-box">
+          <div class="card-header">
+            <div class="header-icon"><i class="bi bi-card-text"></i></div>
+            <div>
+              <h3>Company Story Summary</h3>
+              <p>Short bio displayed in the footer about section</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <textarea
+                class="form-control"
+                rows="3"
+                [(ngModel)]="settings.aboutText"
+                placeholder="Describe your expedition services..."
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save Action Bar -->
+        <div class="save-bar">
+          <button
+            type="button"
+            class="btn-save"
+            [disabled]="saving"
+            (click)="saveSettings()">
+            <span *ngIf="!saving"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Save & Propagate Brand Settings</span>
+            <span *ngIf="saving"><i class="bi bi-arrow-repeat spin me-2"></i>Saving & Propagating...</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Live Instant Preview -->
+      <div class="preview-column">
+        <div class="preview-sticky">
+          <div class="preview-badge"><i class="bi bi-eye-fill me-1"></i> Live Real-Time Preview</div>
+
+          <!-- Preview: Header Contact Bar -->
+          <div class="preview-card">
+            <div class="preview-card-title">Site Header Strip Preview</div>
+            <div class="mock-top-bar">
+              <div class="mock-top-item">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span>{{ settings.contactLocation || 'Bengaluru, Karnataka' }}</span>
+              </div>
+              <div class="mock-divider"></div>
+              <div class="mock-top-item">
+                <i class="bi bi-telephone-fill"></i>
+                <span>{{ settings.supportPhone || '+91 98765 43210' }}</span>
+              </div>
+              <div class="mock-divider"></div>
+              <div class="mock-top-item">
+                <i class="bi bi-envelope-fill"></i>
+                <span>{{ settings.supportEmail || 'info@gowildkarunadu.com' }}</span>
+              </div>
+            </div>
+            <div class="mock-navbar">
+              <div class="mock-brand">
+                <span class="mock-logo-title">{{ settings.brandName || 'goWILD Karunadu' }}</span>
+                <span class="mock-logo-sub" *ngIf="settings.brandSubtitle">{{ settings.brandSubtitle }}</span>
+              </div>
+              <div class="mock-nav-links">
+                <span>Treks</span>
+                <span>About</span>
+                <span>Blog</span>
+                <span>Contact</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview: WhatsApp Float Widget -->
+          <div class="preview-card">
+            <div class="preview-card-title">WhatsApp Floating Widget</div>
+            <div class="mock-wa-preview">
+              <div class="mock-wa-icon"><i class="bi bi-whatsapp"></i></div>
+              <div class="mock-wa-info">
+                <div class="mock-wa-name">Chat with {{ settings.brandName || 'goWILD Karunadu' }}</div>
+                <div class="mock-wa-sub">Click opens wa.me/{{ settings.whatsappNumberRaw || '919876543210' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview: Email Signature -->
+          <div class="preview-card">
+            <div class="preview-card-title">Booking Confirmation Email Footer</div>
+            <div class="mock-email-footer">
+              <div class="mock-email-support">
+                {{ settings.supportEmail || 'info@gowildkarunadu.com' }} &nbsp;•&nbsp; {{ settings.supportPhone || '+91 98765 43210' }}
+              </div>
+              <div class="mock-email-hours">Support Hours: 9:00 AM – 6:00 PM (Mon–Sat)</div>
+              <div class="mock-email-copy">
+                © {{ currentYear }} {{ settings.brandName || 'goWILD Karunadu' }}. All rights reserved.
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview: Tax Invoice Company Block -->
+          <div class="preview-card">
+            <div class="preview-card-title">Tax Invoice & Pass Header</div>
+            <div class="mock-invoice-header">
+              <div class="mock-inv-name">{{ settings.brandName || 'goWILD Karunadu' }}</div>
+              <div class="mock-inv-legal">{{ settings.legalName || 'goWILD Karunadu Eco-Adventures Pvt Ltd' }}</div>
+              <div class="mock-inv-meta">GSTIN: {{ settings.gstin || '29AAGCW9123K1Z8' }}</div>
+              <div class="mock-inv-addr">{{ settings.address || 'Bengaluru, Karnataka' }}</div>
+            </div>
+          </div>
+
+          <!-- Preview: Site Footer Copyright -->
+          <div class="preview-card">
+            <div class="preview-card-title">Footer Copyright Bar</div>
+            <div class="mock-footer-copy">
+              Copyright &copy; {{ currentYear }} <strong>{{ settings.brandName || 'goWILD Karunadu' }}</strong>. All rights reserved.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</app-admin-shell>
+</ion-content>

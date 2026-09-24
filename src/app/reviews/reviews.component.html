@@ -1,0 +1,149 @@
+<ion-content class="reviews-page">
+  <app-admin-shell
+    sectionLabel="Reviews"
+    title="Manage Reviews"
+    subtitle="Track guest feedback and trip sentiment in one place.">
+
+    <!-- ── Search + Filter Bar ── -->
+    <div class="reviews-toolbar">
+      <div class="reviews-search">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Search by name, trek, or keyword…" />
+      </div>
+      <div class="reviews-filter-row">
+        <span class="result-count"><strong>{{ filteredReviews.length }}</strong> reviews</span>
+        <div class="review-filters">
+          <label for="reviewStatus">Status</label>
+          <select id="reviewStatus" [(ngModel)]="selectedStatus">
+            <option value="all">All</option>
+            <option *ngFor="let status of reviewStatusOptions" [value]="status">{{ status | titlecase }}</option>
+          </select>
+        </div>
+        <!-- Select All -->
+        <button class="btn-app ghost" type="button" (click)="toggleSelectAll()">
+          {{ allVisibleSelected ? 'Deselect All' : 'Select All' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Bulk Actions Bar ── -->
+    <div class="bulk-bar" *ngIf="selectedCount > 0">
+      <span class="bulk-label">{{ selectedCount }} selected</span>
+      <button class="btn-app" type="button" (click)="bulkApprove()">
+        <i class="bi bi-check2-circle"></i> Approve Selected
+      </button>
+      <button class="btn-app bg-danger" type="button" (click)="bulkReject()">
+        <i class="bi bi-x-circle"></i> Reject Selected
+      </button>
+      <button class="btn-app ghost" type="button" (click)="clearSelection()">Clear</button>
+    </div>
+
+    <!-- ── Reviews Grid ── -->
+    <div class="reviews-grid">
+      <div
+        class="review-card"
+        *ngFor="let review of filteredReviews"
+        [class.review-selected]="selectedReviewIds.has(review.id)">
+
+        <!-- Selection Checkbox -->
+        <label class="review-select-check">
+          <input
+            type="checkbox"
+            [checked]="selectedReviewIds.has(review.id)"
+            (change)="toggleReviewSelection(review.id)" />
+        </label>
+
+        <!-- Top Row: Avatar + Name + Stars -->
+        <div class="review-top">
+          <div class="customer-info">
+            <img loading="lazy" decoding="async" [src]="review.avatar" [alt]="review.customerName" class="avatar" />
+            <div>
+              <h3>{{ review.customerName }}</h3>
+              <p class="trek-name">{{ review.trekName }}</p>
+              <!-- 5-Star Rating -->
+              <div class="star-row">
+                <i
+                  *ngFor="let filled of getStarArray(review.likes)"
+                  class="bi star-icon"
+                  [ngClass]="filled ? 'bi-star-fill star-filled' : 'bi-star star-empty'">
+                </i>
+                <span class="star-count">({{ review.likes }})</span>
+              </div>
+            </div>
+          </div>
+          <span class="status-pill" [ngClass]="'status-' + review.status">
+            {{ review.status | titlecase }}
+          </span>
+        </div>
+
+        <!-- Comment -->
+        <p class="comment">{{ review.comment }}</p>
+
+        <!-- Existing Admin Reply -->
+        <div class="admin-reply-box" *ngIf="review.adminReply">
+          <div class="reply-head">
+            <span><i class="bi bi-shield-check"></i> <strong>Admin Response</strong></span>
+            <span class="reply-date">{{ review.repliedAt }}</span>
+            <button class="reply-del-btn" *ngIf="authService.hasPermission('reviews.manage')" (click)="deleteReply(review)" title="Delete reply">&times;</button>
+          </div>
+          <p class="reply-content">{{ review.adminReply }}</p>
+        </div>
+
+        <!-- Footer: Date + Reply Trigger -->
+        <div class="review-footer">
+          <span class="date">
+            <i class="bi bi-calendar-event"></i>
+            {{ review.date }}
+          </span>
+          <button
+            class="reply-trigger-btn"
+            *ngIf="authService.hasPermission('reviews.manage')"
+            (click)="toggleReply(review.id)">
+            <i class="bi bi-reply"></i>
+            {{ review.adminReply ? 'Edit Reply' : 'Reply' }}
+          </button>
+        </div>
+
+        <!-- Inline Reply Input Box -->
+        <div class="reply-input-panel" *ngIf="replyingReviewId === review.id">
+          <textarea
+            class="form-control reply-textarea"
+            rows="2"
+            [(ngModel)]="replyText"
+            placeholder="Write a response to this guest review...">
+          </textarea>
+          <div class="reply-actions">
+            <button class="btn-app ghost btn-sm" type="button" (click)="toggleReply(review.id)">Cancel</button>
+            <button class="btn-app btn-sm" type="button" (click)="submitReply(review)" [disabled]="!replyText.trim()">
+              <i class="bi bi-send"></i> Send Reply
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Buttons — pending reviews only -->
+        <div class="review-footer" *ngIf="review.status === 'pending' && authService.hasPermission('reviews.manage')">
+          <button class="btn-app" (click)="updateReviewStatus(review, 'approved')">
+            <i class="bi bi-check2-circle"></i>
+            Approve
+          </button>
+          <button class="btn-app bg-danger" (click)="updateReviewStatus(review, 'rejected')">
+            <i class="bi bi-x-circle"></i>
+            Reject
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="reviews-empty" *ngIf="filteredReviews.length === 0 && !loading">
+      <i class="bi bi-chat-square-quote"></i>
+      <h3>No reviews found</h3>
+      <p>Try adjusting your search or status filter.</p>
+    </div>
+
+  </app-admin-shell>
+</ion-content>

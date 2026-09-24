@@ -1,0 +1,260 @@
+<ion-content class="notifications-page">
+  <app-admin-shell title="Notifications" subtitle="Stay in sync with bookings, treks, and system alerts."
+    sectionLabel="Operations">
+    <div class="app-shell">
+      <section class="notif-panel" role="region" aria-label="Notifications">
+        <header class="notif-header">
+          <div class="header-brand">
+            @if (unreadCount() > 0) {
+            <span class="unread-badge" [attr.aria-label]="unreadCount() + ' unread'">
+              {{ unreadCount() }}
+            </span>
+            }
+          </div>
+          <div class="header-actions-group">
+            <button class="compose-btn" (click)="toggleComposer()" [class.active]="showComposer()">
+              <i class="bi bi-pencil-square"></i>
+              {{ showComposer() ? 'Close Composer' : 'New Notification' }}
+            </button>
+            <button class="mark-all-btn" (click)="markAllRead()" [disabled]="unreadCount() === 0"
+              aria-label="Mark all as read">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              All read
+            </button>
+          </div>
+        </header>
+
+        <!-- Notification Composer with Live Preview Mode -->
+        @if (showComposer()) {
+        <div class="composer-card">
+          <div class="composer-head">
+            <h3><i class="bi bi-broadcast"></i> Broadcast Notification</h3>
+            <div class="preview-mode-toggle">
+              <button class="mode-btn" [class.active]="!composerPreview()" (click)="composerPreview.set(false)">
+                <i class="bi bi-pencil"></i> Edit
+              </button>
+              <button class="mode-btn" [class.active]="composerPreview()" (click)="composerPreview.set(true)">
+                <i class="bi bi-eye"></i> Live Preview
+              </button>
+            </div>
+          </div>
+
+          @if (!composerPreview()) {
+          <div class="composer-form">
+            <div class="cf-row">
+              <label>
+                <span>Category / Type</span>
+                <select class="form-select" [(ngModel)]="composerForm.type">
+                  <option value="booking">Booking Update</option>
+                  <option value="trek">Trek Alert</option>
+                  <option value="weather">Weather Alert</option>
+                  <option value="guide">Guide Notice</option>
+                  <option value="offer">Special Offer</option>
+                  <option value="system">System Notice</option>
+                  <option value="blog">Blog Story</option>
+                </select>
+              </label>
+              <label>
+                <span>Target Audience</span>
+                <select class="form-select" [(ngModel)]="composerForm.target">
+                  <option value="all">All Users</option>
+                  <option value="bookers">Active Trek Bookers</option>
+                  <option value="admins">Admins & Staff</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              <span>Notification Title *</span>
+              <input class="form-control" type="text" [(ngModel)]="composerForm.title" placeholder="e.g., Trail Update: Kudremukh Trek departure rescheduled" />
+            </label>
+
+            <label>
+              <span>Message Content *</span>
+              <textarea class="form-control" rows="3" [(ngModel)]="composerForm.message" placeholder="Write the notification message..."></textarea>
+            </label>
+
+            <div class="cf-row">
+              <label>
+                <span>Action Button Label</span>
+                <input class="form-control" type="text" [(ngModel)]="composerForm.actionLabel" placeholder="e.g., View Details" />
+              </label>
+              <label>
+                <span>Target URL / Route</span>
+                <input class="form-control" type="text" [(ngModel)]="composerForm.actionUrl" placeholder="e.g., /admin/bookings" />
+              </label>
+            </div>
+          </div>
+          } @else {
+          <!-- Live Preview Mode -->
+          <div class="live-preview-box">
+            <div class="preview-device-label"><i class="bi bi-phone"></i> In-App Notification Live Preview:</div>
+            <div class="notif-item preview-item" [class.type--booking]="composerForm.type === 'booking'"
+                 [class.type--weather]="composerForm.type === 'weather'" [class.type--trek]="composerForm.type === 'trek'"
+                 [class.type--guide]="composerForm.type === 'guide'" [class.type--offer]="composerForm.type === 'offer'"
+                 [class.type--blog]="composerForm.type === 'blog'" [class.type--system]="composerForm.type === 'system'">
+              <div class="notif-strip"></div>
+              <div class="notif-icon">
+                <i [class]="iconFor(composerForm.type)"></i>
+              </div>
+              <div class="notif-body">
+                <div class="notif-top">
+                  <span class="notif-title">{{ composerForm.title || 'Untitled Notification' }}</span>
+                  <span class="notif-type-tag">{{ labelFor(composerForm.type) }}</span>
+                </div>
+                <p class="notif-message">{{ composerForm.message || 'Notification message will appear here...' }}</p>
+                <div class="notif-footer">
+                  <span class="notif-time">Just now</span>
+                  <button class="notif-action-btn" *ngIf="composerForm.actionLabel">
+                    {{ composerForm.actionLabel }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          }
+
+          <div class="composer-actions">
+            <button class="btn-app ghost" type="button" (click)="toggleComposer()">Cancel</button>
+            <button class="btn-app" type="button" (click)="sendNotification()" [disabled]="!composerForm.title.trim() || !composerForm.message.trim()">
+              <i class="bi bi-send-fill"></i>
+              {{ composerSent() ? 'Sent!' : 'Send Notification' }}
+            </button>
+          </div>
+        </div>
+        }
+
+        <nav class="notif-tabs" role="tablist" aria-label="Filter notifications">
+          @for (tab of tabs; track tab.key) {
+          <button class="tab-btn" role="tab" [class.active]="activeTab() === tab.key"
+            [attr.aria-selected]="activeTab() === tab.key" (click)="setTab(tab.key)">
+            {{ tab.label }}
+          </button>
+          }
+        </nav>
+
+        @if (loading()) {
+        <div class="state-loading" aria-live="polite" role="status">
+          <div class="trail-loader">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <p>Fetching trail updates…</p>
+        </div>
+        }
+
+        @if (error()) {
+        <div class="state-error" role="alert" aria-live="assertive">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <div>
+            <strong>Couldn't reach base camp</strong>
+            <p>{{ error() }}</p>
+          </div>
+          <button class="retry-btn" (click)="fetchNotifications()">Retry</button>
+        </div>
+        }
+
+        @if (!loading() && !error() && notifications().length === 0) {
+        <div class="state-empty" aria-live="polite">
+          <div class="empty-illustration">
+            <svg viewBox="0 0 80 60" fill="none">
+              <path d="M10 50 L28 20 L40 35 L52 12 L70 50Z" fill="rgba(126,167,107,0.15)" stroke="rgba(126,167,107,0.4)"
+                stroke-width="1.5" stroke-linejoin="round" />
+              <circle cx="64" cy="14" r="6" fill="rgba(255,178,80,0.2)" stroke="rgba(255,178,80,0.5)"
+                stroke-width="1.5" />
+            </svg>
+          </div>
+          <p class="empty-title">All clear on the trail!</p>
+          <p class="empty-sub">No notifications here. Time to plan your next adventure.</p>
+        </div>
+        }
+
+        @if (!loading() && !error() && notifications().length > 0) {
+        <ul class="notif-list" role="list">
+          @for (notif of notifications(); track notif.id; let i = $index) {
+          <li class="notif-item" [class.unread]="!notif.read" [class.type--booking]="notif.type === 'booking'"
+            [class.type--weather]="notif.type === 'weather'" [class.type--trek]="notif.type === 'trek'"
+            [class.type--guide]="notif.type === 'guide'" [class.type--offer]="notif.type === 'offer'"
+            [class.type--blog]="notif.type === 'blog'" [class.type--comment]="notif.type === 'comment'"
+            [class.type--system]="notif.type === 'system'" [style.animation-delay]="(i * 0.07) + 's'"
+            (click)="openNotification(notif)" role="listitem">
+
+            <div class="notif-strip" aria-hidden="true"></div>
+
+            <div class="notif-icon" aria-hidden="true">
+              <i [class]="resolveIcon(notif)"></i>
+            </div>
+
+            <div class="notif-body">
+              <div class="notif-top">
+                <span class="notif-title">{{ notif.title }}</span>
+                <span class="notif-type-tag">{{ notif.typeLabel }}</span>
+              </div>
+              @if (notif.meta) {
+              <p class="notif-meta-label">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="11" height="11">
+                  <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6c0 3.5 4.5 8.5 4.5 8.5S12.5 9.5 12.5 6c0-2.5-2-4.5-4.5-4.5z" />
+                  <circle cx="8" cy="6" r="1.5" />
+                </svg>
+                {{ notif.meta }}
+              </p>
+              }
+              <p class="notif-message">{{ notif.message }}</p>
+              <div class="notif-footer">
+                <time class="notif-time" [attr.datetime]="notif.dateIso">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="11" height="11">
+                    <circle cx="8" cy="8" r="6.5" />
+                    <path d="M8 4.5V8l2.5 2" stroke-linecap="round" />
+                  </svg>
+                  {{ notif.timeAgo }}
+                </time>
+                @if (notif.actionLabel) {
+                <button class="notif-action-btn" (click)="onActionClick($event, notif)">
+                  {{ notif.actionLabel }}
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+                    <path d="M3 8h10M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                }
+              </div>
+            </div>
+
+            <button class="notif-dismiss" [attr.aria-label]="'Dismiss ' + notif.title"
+              (click)="$event.stopPropagation(); dismiss(notif.id)">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" />
+              </svg>
+            </button>
+
+            @if (!notif.read) {
+            <span class="unread-pip" aria-label="Unread"></span>
+            }
+
+          </li>
+          }
+        </ul>
+        }
+
+        @if (!loading() && !error()) {
+        <footer class="notif-footer-bar">
+          <span class="footer-count">
+            {{ notifications().length }} update{{ notifications().length !== 1 ? 's' : '' }}
+          </span>
+          <button class="view-all-link">
+            Explore all
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </footer>
+        }
+
+      </section>
+    </div>
+  </app-admin-shell>
+</ion-content>

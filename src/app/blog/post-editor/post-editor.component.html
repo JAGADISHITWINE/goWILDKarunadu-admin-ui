@@ -1,0 +1,155 @@
+<ion-content class="editor-page">
+
+  <div class="app-shell">
+    <header class="editor-hero">
+      <div>
+        <span class="pill">Blog Studio</span>
+        <h1 class="page-title">{{ isEditMode ? 'Edit Post' : 'Create New Post' }}</h1>
+        <p class="page-subtitle">Draft rich updates, schedule releases, and keep your stories consistent.</p>
+      </div>
+      <div class="editor-actions">
+        <button class="btn-app ghost" routerLink="/admin/blog/posts">
+          <i class="bi bi-arrow-left text-dark"></i>
+          Back to posts
+        </button>
+      </div>
+    </header>
+
+    <form [formGroup]="postForm" class="editor-layout">
+      <section class="editor-main">
+        <div class="surface-card editor-card">
+          <label class="field-title">Post Title</label>
+          <ion-input formControlName="title" placeholder="A compelling title..." class="title-input"></ion-input>
+          <ion-text color="danger" *ngIf="postForm.get('title')?.invalid && postForm.get('title')?.touched">
+            <small>Title is required</small>
+          </ion-text>
+        </div>
+
+        <div class="surface-card editor-card">
+          <label class="field-title">Excerpt</label>
+          <ion-textarea formControlName="excerpt" rows="4" placeholder="Short intro to hook readers..."></ion-textarea>
+          <ion-text color="danger" *ngIf="postForm.get('excerpt')?.invalid && postForm.get('excerpt')?.touched">
+            <small>Excerpt is required</small>
+          </ion-text>
+        </div>
+
+        <div class="surface-card editor-card">
+          <div class="card-head-row">
+            <label class="field-title">Full Content (Rich Story)</label>
+            <div class="editor-mode-toggle">
+              <button class="editor-mode-btn" [class.active]="!isContentPreview" type="button" (click)="isContentPreview = false">
+                <i class="bi bi-pencil"></i> Write
+              </button>
+              <button class="editor-mode-btn" [class.active]="isContentPreview" type="button" (click)="isContentPreview = true">
+                <i class="bi bi-eye"></i> Preview
+              </button>
+            </div>
+          </div>
+
+          <!-- Rich Formatting Toolbar -->
+          <div class="rich-toolbar" *ngIf="!isContentPreview">
+            <button type="button" class="rt-btn" (click)="insertFormat('**', '**')" title="Bold"><i class="bi bi-type-bold"></i></button>
+            <button type="button" class="rt-btn" (click)="insertFormat('*', '*')" title="Italic"><i class="bi bi-type-italic"></i></button>
+            <button type="button" class="rt-btn" (click)="insertFormat('## ')" title="Heading 2"><i class="bi bi-type-h2"></i></button>
+            <button type="button" class="rt-btn" (click)="insertFormat('### ')" title="Heading 3"><i class="bi bi-type-h3"></i></button>
+            <span class="rt-divider"></span>
+            <button type="button" class="rt-btn" (click)="insertFormat('- ')" title="Bullet List"><i class="bi bi-list-ul"></i></button>
+            <button type="button" class="rt-btn" (click)="insertFormat('1. ')" title="Numbered List"><i class="bi bi-list-ol"></i></button>
+            <button type="button" class="rt-btn" (click)="insertFormat('> ')" title="Quote"><i class="bi bi-quote"></i></button>
+            <button type="button" class="rt-btn" (click)="insertFormat('```\n', '\n```')" title="Code Block"><i class="bi bi-code-square"></i></button>
+            <span class="rt-divider"></span>
+            <button type="button" class="rt-btn" (click)="insertFormat('[', '](https://)')" title="Insert Link"><i class="bi bi-link-45deg"></i></button>
+            <button type="button" class="rt-btn" (click)="insertFormat('![Alt text](', ')')" title="Insert Image"><i class="bi bi-card-image"></i></button>
+          </div>
+
+          <!-- Write Mode -->
+          <ion-textarea
+            *ngIf="!isContentPreview"
+            formControlName="content"
+            rows="16"
+            placeholder="Write your story using markdown formatting or standard text...">
+          </ion-textarea>
+
+          <!-- Live Preview Mode -->
+          <div *ngIf="isContentPreview" class="content-preview-pane">
+            <div class="preview-story-body" [innerHTML]="postForm.get('content')?.value || '<em>No content written yet...</em>'"></div>
+          </div>
+
+          <ion-text color="danger" *ngIf="postForm.get('content')?.invalid && postForm.get('content')?.touched">
+            <small>Content is required</small>
+          </ion-text>
+        </div>
+      </section>
+
+      <aside class="editor-side">
+        <div class="surface-card editor-card">
+          <h3>Publish Settings</h3>
+          <div class="field-group">
+            <label>Category</label>
+            <ion-select placeholder="Select" formControlName="category">
+              <ion-select-option *ngFor="let cat of categories" [value]="cat">{{ cat }}</ion-select-option>
+            </ion-select>
+            <ion-text color="danger" *ngIf="postForm.get('category')?.invalid && postForm.get('category')?.touched">
+              <small>Category is required</small>
+            </ion-text>
+          </div>
+
+          <div class="field-group">
+            <label>Publish Date</label>
+            <ion-datetime formControlName="publishDate" presentation="date-time"></ion-datetime>
+          </div>
+        </div>
+
+        <div class="surface-card editor-card">
+          <h3>Tags</h3>
+          <div formArrayName="tags" class="tags-list">
+            <div *ngFor="let tag of tags.controls; let i = index" class="tag-item">
+              <ion-item>
+                <ion-input [formControlName]="i" placeholder="Enter tag"></ion-input>
+                <ion-button slot="end" fill="clear" color="danger" (click)="removeTag(i)" *ngIf="tags.length > 1">
+                  <i class="bi bi-x-circle"></i>
+                </ion-button>
+              </ion-item>
+            </div>
+          </div>
+          <ion-button fill="outline" size="small" (click)="addTag()">
+            <i class="bi bi-plus"></i>
+            Add Tag
+          </ion-button>
+        </div>
+
+        <div class="surface-card editor-card">
+          <h3>Featured Image</h3>
+          <div *ngIf="imagePreview" class="image-preview">
+            <img loading="lazy" decoding="async" [src]="getImageSrc(imagePreview)" alt="Preview" />
+            <button class="btn-app ghost" type="button" (click)="removeImage()">
+              <i class="bi bi-trash"></i>
+              Remove Image
+            </button>
+          </div>
+
+          <button *ngIf="!imagePreview" class="btn-app ghost" type="button" (click)="fileInput.click()">
+            <i class="bi bi-image"></i>
+            Upload Image
+          </button>
+
+          <button *ngIf="imagePreview" class="btn-app ghost" type="button" (click)="fileInput.click()">
+            <i class="bi bi-image"></i>
+            Change Image
+          </button>
+
+          <input #fileInput type="file" accept="image/*" hidden (change)="onImageSelect($event)" />
+
+          <ion-note class="ion-padding-top">
+            <small>Recommended size: 1200x630px. Max file size: 5MB</small>
+          </ion-note>
+        </div>
+
+        <button class="btn-app publish-btn" type="button" (click)="publish()">
+          <i class="bi bi-send"></i>
+          Publish Now
+        </button>
+      </aside>
+    </form>
+  </div>
+</ion-content>

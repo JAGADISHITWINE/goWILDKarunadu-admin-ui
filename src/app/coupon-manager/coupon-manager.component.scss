@@ -1,0 +1,266 @@
+:host {
+  display: block;
+}
+
+.coupon-page {
+  --background: transparent;
+}
+
+/* ── Form Card ── */
+.coupon-form-card,
+.coupon-list-card {
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 18px;
+}
+
+.coupon-form-card h3,
+.list-head h3 {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+label span {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  color: var(--app-ink-muted);
+  font-weight: 600;
+}
+
+.actions-row {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ok  { color: #166534; font-size: 0.9rem; }
+.err { color: #b91c1c; font-size: 0.9rem; }
+
+/* ── List Section ── */
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Table ── */
+.table-wrap {
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.table-wrap thead th {
+  background: linear-gradient(180deg, #fff 0%, #fdfbf8 100%);
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--app-ink-muted);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--app-border);
+  white-space: nowrap;
+}
+
+.table-wrap tbody td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  color: var(--app-ink);
+  vertical-align: middle;
+}
+
+.table-wrap tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-wrap tbody tr:hover td {
+  background: rgba(29, 122, 109, 0.03);
+}
+
+/* ── Discount Cell ── */
+.discount-cell {
+  font-weight: 700;
+  color: var(--app-accent);
+}
+
+/* ── Expiry Cell ── */
+.expiry-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--app-ink-muted);
+  white-space: nowrap;
+}
+
+.expiry-arrow {
+  opacity: 0.5;
+}
+
+/* ── Status Pills ── */
+.coupon-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.cpill-active   { background: rgba(47, 157, 106, 0.15); color: #166534; }
+.cpill-expired  { background: rgba(224, 106, 91, 0.15); color: #b91c1c; }
+.cpill-inactive { background: rgba(107, 114, 128, 0.12); color: #6b7280; }
+
+/* ── Actions Cell ── */
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.text-danger { color: #b91c1c !important; }
+
+/* ── Empty Row ── */
+.empty-row {
+  text-align: center;
+  color: var(--app-ink-muted);
+  padding: 24px !important;
+  font-size: 0.9rem;
+}
+
+/* ── Global Badge & Usage Button ── */
+.badge-global {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(30, 64, 175, 0.08);
+  color: #1e40af;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.usage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--app-border);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--app-ink);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+  }
+}
+
+.selected-row td {
+  background: rgba(29, 122, 109, 0.05) !important;
+}
+
+/* ── Usage Details Panel ── */
+.usage-detail-row td {
+  padding: 0 !important;
+  background: #fafaf9 !important;
+  border-bottom: 2px solid var(--app-border) !important;
+}
+
+.usage-panel {
+  padding: 16px 20px;
+  border-left: 4px solid var(--app-accent, #1d7a6d);
+}
+
+.usage-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+
+  h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--app-ink);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.usage-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.usage-loading, .usage-empty {
+  font-size: 0.85rem;
+  color: var(--app-ink-muted);
+  padding: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usage-subtable {
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.82rem;
+  margin: 0;
+
+  th {
+    background: #f3f4f6 !important;
+    font-size: 0.74rem !important;
+    padding: 8px 10px !important;
+  }
+
+  td {
+    padding: 8px 10px !important;
+    font-size: 0.82rem !important;
+  }
+}
+

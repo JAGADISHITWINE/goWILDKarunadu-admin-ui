@@ -1,0 +1,99 @@
+<ion-content class="referal-page">
+  <app-admin-shell title="Referral Program" subtitle="Control how much discount ambassadors and their friends enjoy"
+    sectionLabel="Growth">
+    <div class="referral-settings">
+      <section class="header">
+        <div class="status-pill" [ngClass]="statusClass">
+          <span class="dot"></span>
+          {{ statusLabel }}
+        </div>
+        <small class="meta">{{ lastUpdatedLabel }}</small>
+      </section>
+
+      <section *ngIf="!loading" class="stat-grid">
+        <article class="stat-card" *ngFor="let card of statCards" [ngClass]="card.accent">
+          <p class="label">{{ card.label }}</p>
+          <p class="value">{{ card.value }}</p>
+          <p class="helper" *ngIf="card.helper">{{ card.helper }}</p>
+        </article>
+      </section>
+
+      <div class="loading-state" *ngIf="loading">
+        <ion-spinner name="lines"></ion-spinner>
+        <p>Loading referral program settings…</p>
+      </div>
+
+      <form class="settings-form" [formGroup]="form" (ngSubmit)="saveSettings()" novalidate>
+        <div class="row">
+          <div class="col-sm-3 form-row ">
+            <label>
+              Base Discount (₹)
+              <input type="text" formControlName="baseDiscount" min="0" step="50" class="form-control" />
+            </label>
+            <span class="error" *ngIf="getFieldError('baseDiscount')">{{ getFieldError('baseDiscount') }}</span>
+            <p class="hint">Applied on every approved referral booking.</p>
+          </div>
+          <div class="col-sm-3 form-row ">
+            <label>
+              Bonus Discount (₹)
+              <input type="text" formControlName="bonusDiscount" min="0" step="50" class="form-control" />
+            </label>
+            <span class="error" *ngIf="getFieldError('bonusDiscount')">{{ getFieldError('bonusDiscount') }}</span>
+            <p class="hint">Used when the participant threshold is met or exceeded.</p>
+          </div>
+          <div class="form-row compact">
+            <label>
+              Bonus Participant Threshold
+              <input type="text" formControlName="bonusParticipantThreshold" min="1" step="1" class="form-control" />
+            </label>
+            <span class="error" *ngIf="getFieldError('bonusParticipantThreshold')">{{
+              getFieldError('bonusParticipantThreshold') }}</span>
+            <p class="hint">Friends needed in a single booking to unlock the bonus amount.</p>
+          </div>
+        </div>
+
+
+        <div class="row">
+          <div class="form-row compact col-sm-3">
+            <label>
+              Free Slot Threshold
+              <input type="text" formControlName="freeSlotThreshold" min="1" step="1" class="form-control" />
+            </label>
+            <span class="error" *ngIf="getFieldError('freeSlotThreshold')">{{ getFieldError('freeSlotThreshold')
+              }}</span>
+            <p class="hint">Successful referrals required before a free slot is awarded.</p>
+          </div>
+
+          <div class="form-row compact col-sm-3">
+            <label>
+              Slots Awarded
+              <input type="text" formControlName="freeSlotValue" min="1" step="1" class="form-control" />
+            </label>
+            <span class="error" *ngIf="getFieldError('freeSlotValue')">{{ getFieldError('freeSlotValue') }}</span>
+            <p class="hint">Number of free seats unlocked every time the threshold is reached.</p>
+          </div>
+          <div class="form-row switch col-sm-6">
+            <label class="toggle">
+              <input type="checkbox" formControlName="isEnabled" />
+              <span class="slider"></span>
+              <span class="toggle-label">Enable referral program</span>
+            </label>
+            <p class="hint">Pause the program to stop users from applying referral discounts.</p>
+          </div>
+        </div>
+
+        <div class="actions d-flex justify-content-end">
+          <button type="submit" class="primary" [disabled]="saving">
+            {{ saving ? 'Saving…' : 'Save Settings' }}
+          </button>
+          <button type="button" class="ghost" (click)="loadSettings()" [disabled]="loading || saving">
+            Reset
+          </button>
+        </div>
+
+        <p class="message success" *ngIf="message">{{ message }}</p>
+        <p class="message error" *ngIf="error && !form.invalid">{{ error }}</p>
+      </form>
+    </div>
+  </app-admin-shell>
+</ion-content>

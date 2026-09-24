@@ -1,0 +1,1255 @@
+<ion-content class="ops-page">
+  <app-admin-shell
+    sectionLabel="Operations"
+    title="Trek & Tour Control Center"
+    subtitle="Run inventory, batches, finance, CRM, content, and reporting from one professional admin workspace.">
+
+    <!-- ─── Operations Navigation Tabs ─── -->
+    <div class="ops-tab-nav">
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'overview'"
+        (click)="setActiveTab('overview')">
+        <i class="bi bi-speedometer2"></i>
+        <span>Overview & Health</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'checkin'"
+        (click)="setActiveTab('checkin')">
+        <i class="bi bi-qr-code-scan"></i>
+        <span>Basecamp Check-in</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'advisory'"
+        (click)="setActiveTab('advisory')">
+        <i class="bi bi-cloud-lightning-rain"></i>
+        <span>Trail & Weather Alerts</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'gear'"
+        (click)="setActiveTab('gear')">
+        <i class="bi bi-backpack4"></i>
+        <span>Gear Inventory</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'pnl'"
+        (click)="setActiveTab('pnl')">
+        <i class="bi bi-calculator"></i>
+        <span>Batch P&L Calculator</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'royalty'"
+        (click)="setActiveTab('royalty'); loadForestRoyaltyLedger()">
+        <i class="bi bi-bank"></i>
+        <span>Forest Dept Royalty</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'journey'"
+        (click)="setActiveTab('journey')">
+        <i class="bi bi-whatsapp"></i>
+        <span>Journey Dispatcher</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'inventory'"
+        (click)="setActiveTab('inventory')">
+        <i class="bi bi-layers"></i>
+        <span>Batches</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'logistics'"
+        (click)="setActiveTab('logistics')">
+        <i class="bi bi-truck"></i>
+        <span>Logistics</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'crm'"
+        (click)="setActiveTab('crm')">
+        <i class="bi bi-chat-left-heart"></i>
+        <span>CRM</span>
+      </button>
+
+      <button
+        type="button"
+        class="ops-tab-btn"
+        [class.active]="activeTab === 'rbac'"
+        (click)="setActiveTab('rbac')">
+        <i class="bi bi-shield-lock"></i>
+        <span>Access & RBAC</span>
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 1: Overview & Health
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'overview'" class="tab-pane-content">
+      <section class="health-card soft-card">
+        <div>
+          <h3>Backend Connectivity Check</h3>
+          <p *ngIf="lastSyncedAt">Last sync: {{ lastSyncedAt }}</p>
+          <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+        </div>
+        <button class="btn-app" (click)="loadOperationsData()" [disabled]="loading">
+          <i class="bi bi-arrow-clockwise me-1" [class.spin]="loading"></i>
+          {{ loading ? 'Syncing...' : 'Refresh Sync' }}
+        </button>
+      </section>
+
+      <section class="checks-grid" *ngIf="apiChecks.length">
+        <article class="check-chip" *ngFor="let c of apiChecks" [class.ok]="c.ok" [class.fail]="!c.ok">
+          <span>{{ c.name }}</span>
+          <strong>{{ c.ok ? 'Connected' : 'Failed' }}</strong>
+        </article>
+      </section>
+
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <p>Failed Payments</p>
+          <h3 class="text-danger">{{ failedPayments }}</h3>
+        </article>
+        <article class="kpi-card">
+          <p>Compliance Completion</p>
+          <h3 class="text-success">{{ complianceCompletion }}%</h3>
+        </article>
+        <article class="kpi-card">
+          <p>Open Support Tickets</p>
+          <h3 class="text-warning">{{ openTicketCount }}</h3>
+        </article>
+        <article class="kpi-card">
+          <p>Total Revenue</p>
+          <h3>₹{{ totalRevenue | number:'1.0-0' }}</h3>
+        </article>
+        <article class="kpi-card">
+          <p>Total Bookings</p>
+          <h3>{{ totalBookings }}</h3>
+        </article>
+        <article class="kpi-card">
+          <p>Total Users</p>
+          <h3>{{ totalUsers }}</h3>
+        </article>
+      </section>
+
+      <div class="ops-grid mt-4">
+        <article class="surface-card panel">
+          <h3>Reports & Data Exports</h3>
+          <div class="list" *ngFor="let report of reports">
+            <div>
+              <strong>{{ report.name }}</strong>
+              <p>Format: {{ report.format }} | Last: {{ report.lastGenerated }}</p>
+            </div>
+            <button class="btn-app ghost" (click)="exportReport(report)">
+              <i class="bi bi-download me-1"></i> Export {{ report.format }}
+            </button>
+          </div>
+        </article>
+
+        <article class="surface-card panel">
+          <h3>Payment Operations & Gateway Health</h3>
+          <div class="list" *ngFor="let p of paymentOps">
+            <div>
+              <strong>{{ p.bookingId }} · ₹{{ p.amount }}</strong>
+              <p>{{ p.mode }} | {{ p.status }}</p>
+            </div>
+            <span class="pill">{{ p.reconcile }}</span>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB: Basecamp QR Scanner & Digital Check-in Desk
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'checkin'" class="tab-pane-content">
+      <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+          <div class="surface-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h3 class="mb-1"><i class="bi bi-qr-code-scan text-accent"></i> Basecamp Check-in Desk</h3>
+                <p class="text-muted small mb-0">Scan customer QR Pass or enter Booking reference `#GWK-...` to verify permits.</p>
+              </div>
+              <button class="btn-app" [ngClass]="isCameraActive ? 'danger' : 'primary'" (click)="toggleCameraScanner()">
+                <i class="bi" [ngClass]="isCameraActive ? 'bi-camera-video-off' : 'bi-camera-video'"></i>
+                {{ isCameraActive ? 'Stop Camera' : 'Start QR Camera' }}
+              </button>
+            </div>
+
+            <!-- Simulated / Live Camera Viewport -->
+            <div class="camera-viewport mb-3" *ngIf="isCameraActive">
+              <div class="scanner-laser"></div>
+              <div class="scanner-frame">
+                <i class="bi bi-qr-code"></i>
+                <span>Point Camera at Trekker Mobile Pass QR</span>
+              </div>
+            </div>
+
+            <!-- Manual Search Input -->
+            <div class="input-group mb-3">
+              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Search Booking ID (e.g. 104), customer name, or phone..."
+                [(ngModel)]="scannerQuery"
+                (ngModelChange)="searchCheckin($event)"
+              />
+              <button class="btn btn-outline-secondary" type="button" (click)="searchCheckin(scannerQuery)">Look up</button>
+            </div>
+
+            <!-- Scan Match Result Card -->
+            <div class="checkin-match-card" *ngIf="foundBooking">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <span class="badge bg-primary text-white mb-1">PASS #GWK-{{ foundBooking.id }}</span>
+                  <h4 class="mb-0">{{ foundBooking.customer_name || foundBooking.customerName }}</h4>
+                  <small class="text-muted">{{ foundBooking.customer_email || foundBooking.email }} &bull; {{ foundBooking.customer_phone || foundBooking.phone }}</small>
+                </div>
+                <div class="text-end">
+                  <span class="status-pill" [ngClass]="isCheckedIn ? 'status-green' : 'status-yellow'">
+                    {{ isCheckedIn ? 'Checked-in / At Camp' : 'Not Checked-in' }}
+                  </span>
+                  <div class="small font-weight-bold mt-1">₹{{ foundBooking.amount || foundBooking.total_amount }} ({{ foundBooking.payment_status || foundBooking.paymentStatus | uppercase }})</div>
+                </div>
+              </div>
+
+              <div class="match-meta-grid mb-3">
+                <div class="mm-item">
+                  <span class="label">Expedition:</span>
+                  <strong>{{ foundBooking.trek_name || foundBooking.trekName }}</strong>
+                </div>
+                <div class="mm-item">
+                  <span class="label">Participants:</span>
+                  <strong>{{ foundBooking.participants || foundBooking.seats || 1 }} Trekkers</strong>
+                </div>
+                <div class="mm-item">
+                  <span class="label">Permit Status:</span>
+                  <span class="text-success font-weight-bold"><i class="bi bi-check-circle-fill"></i> Cleared & Issued</span>
+                </div>
+              </div>
+
+              <!-- 70% Remainder Due Alert & Settle Trigger -->
+              <div class="alert alert-warning d-flex justify-content-between align-items-center mb-3 p-2 rounded" *ngIf="foundBooking.balance_due > 0 || foundBooking.payment_status === 'partial'">
+                <div class="small">
+                  <strong class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> 70% Remainder Balance Due:</strong>
+                  <div class="font-weight-bold text-dark">₹{{ foundBooking.balance_due || (foundBooking.total_amount * 0.7) | number:'1.0-0' }} pending</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-success font-weight-bold" (click)="collectBasecampRemainder(foundBooking)">
+                  <i class="bi bi-cash-coin me-1"></i> Collect &amp; Mark Paid
+                </button>
+              </div>
+
+              <div class="d-flex gap-2">
+                <button class="btn-app primary flex-grow-1" [disabled]="isCheckedIn" (click)="confirmCheckin(foundBooking)">
+                  <i class="bi bi-check2-circle me-1"></i>
+                  {{ isCheckedIn ? 'Already Checked-in' : 'Confirm Basecamp Check-in' }}
+                </button>
+                <a class="btn-app ghost" [href]="'tel:' + (foundBooking.customer_phone || foundBooking.phone)" *ngIf="foundBooking.customer_phone || foundBooking.phone">
+                  <i class="bi bi-telephone"></i> Call
+                </a>
+              </div>
+            </div>
+
+            <div class="alert alert-info small mt-3 mb-0" *ngIf="!foundBooking && scannerQuery">
+              <i class="bi bi-info-circle me-1"></i> No matching booking found. Ensure the reference is valid.
+            </div>
+          </div>
+        </div>
+
+        <!-- Today Arrival Stream -->
+        <div class="col-lg-5">
+          <div class="surface-card p-4 h-100">
+            <h3 class="mb-1"><i class="bi bi-clock-history text-muted"></i> Recent Basecamp Arrivals</h3>
+            <p class="text-muted small mb-3">Live verified check-ins at forest entry checkpoint.</p>
+
+            <div class="checkin-feed" *ngIf="checkinHistory.length > 0; else noCheckin">
+              <div class="feed-item" *ngFor="let ch of checkinHistory">
+                <div class="feed-icon"><i class="bi bi-person-check-fill text-success"></i></div>
+                <div class="feed-body">
+                  <strong>{{ ch.name }} (#{{ ch.bookingId }})</strong>
+                  <p class="mb-0 small text-muted">{{ ch.trek }} &bull; {{ ch.count }} Trekkers</p>
+                </div>
+                <span class="feed-time">{{ ch.time }}</span>
+              </div>
+            </div>
+            <ng-template #noCheckin>
+              <div class="text-center py-4 text-muted small">
+                <i class="bi bi-person-badge fs-2 d-block mb-1 text-muted"></i>
+                No check-ins recorded yet for today's batch departures.
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB: Trail Condition & Weather Alerts Desk
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'advisory'" class="tab-pane-content">
+      <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+          <div class="surface-card p-4">
+            <h3 class="mb-1"><i class="bi bi-broadcast text-danger"></i> Trail Advisory & Weather Alert Desk</h3>
+            <p class="text-muted small mb-3">Broadcast emergency trail warnings or weather alerts to batch participants.</p>
+
+            <div *ngIf="broadcastSuccessMsg" class="alert alert-success small mb-3">
+              <i class="bi bi-check-circle-fill me-1"></i> {{ broadcastSuccessMsg }}
+            </div>
+
+            <form (ngSubmit)="broadcastAdvisory()">
+              <div class="mb-3">
+                <label class="form-label font-weight-bold">Target Trek Expedition</label>
+                <input type="text" class="form-control" [(ngModel)]="advisoryForm.trekName" name="trekName" required />
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">Trail Status & Passability</label>
+                  <select class="form-select" [(ngModel)]="advisoryForm.trailCondition" name="trailCondition">
+                    <option *ngFor="let opt of trailConditionOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label font-weight-bold">Alert Severity Level</label>
+                  <select class="form-select" [(ngModel)]="advisoryForm.severity" name="severity">
+                    <option *ngFor="let opt of trailSeverityOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label font-weight-bold">Alert Message / Instructions to Trekkers</label>
+                <textarea
+                  class="form-control"
+                  rows="3"
+                  [(ngModel)]="advisoryForm.alertMessage"
+                  name="alertMessage"
+                  placeholder="e.g. Heavy rainfall alert in Western Ghats: Carry ponchos, waterproof backpack liners..."
+                  required
+                ></textarea>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Channel: <strong>{{ advisoryForm.channel }}</strong></span>
+                <button type="submit" class="btn-app danger" [disabled]="isBroadcasting">
+                  <i class="bi bi-send-fill me-1" [class.spin]="isBroadcasting"></i>
+                  {{ isBroadcasting ? 'Broadcasting...' : 'Broadcast to Batch Trekkers' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Regional Western Ghats Weather Monitor -->
+        <div class="col-lg-5">
+          <div class="surface-card p-4 h-100">
+            <h3 class="mb-1"><i class="bi bi-cloud-sun-fill text-warning"></i> Regional Trail Weather Monitor</h3>
+            <p class="text-muted small mb-3">Live Western Ghats eco-checkpoint meteorological feed.</p>
+
+            <div class="weather-region-card mb-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>Kudremukha Range (Chikkamagaluru)</strong>
+                  <div class="small text-muted">Elevation: 1,894m &bull; Trail: Open</div>
+                </div>
+                <div class="weather-temp">21°C <i class="bi bi-cloud-rain text-primary"></i></div>
+              </div>
+              <div class="progress mt-2" style="height: 5px;">
+                <div class="progress-bar bg-info" style="width: 65%" title="65% Rain Probability"></div>
+              </div>
+              <small class="text-muted mt-1 d-block">Precipitation: 65% &bull; Wind: 18 km/h</small>
+            </div>
+
+            <div class="weather-region-card mb-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>Netravati Peak (Belthangady)</strong>
+                  <div class="small text-muted">Elevation: 1,520m &bull; Trail: Optimal</div>
+                </div>
+                <div class="weather-temp">23°C <i class="bi bi-cloud-sun text-warning"></i></div>
+              </div>
+              <div class="progress mt-2" style="height: 5px;">
+                <div class="progress-bar bg-success" style="width: 25%" title="25% Rain Probability"></div>
+              </div>
+              <small class="text-muted mt-1 d-block">Precipitation: 25% &bull; Wind: 12 km/h</small>
+            </div>
+
+            <div class="weather-region-card">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>Kodachadri Peak (Shimoga)</strong>
+                  <div class="small text-muted">Elevation: 1,343m &bull; Trail: Wet & Mist</div>
+                </div>
+                <div class="weather-temp">19°C <i class="bi bi-cloud-fog2 text-secondary"></i></div>
+              </div>
+              <div class="progress mt-2" style="height: 5px;">
+                <div class="progress-bar bg-warning" style="width: 50%" title="50% Rain Probability"></div>
+              </div>
+              <small class="text-muted mt-1 d-block">Precipitation: 50% &bull; Wind: 22 km/h</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB: Gear Rental Inventory Manager
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'gear'" class="tab-pane-content">
+      <section class="surface-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h3 class="mb-1"><i class="bi bi-backpack4 text-accent"></i> Gear Rental Stock & Inventory Ledger</h3>
+            <p class="text-muted small mb-0">Track trekking poles, sleeping bags, tents, and headlamps stock availability.</p>
+          </div>
+          <button class="btn-app primary" type="button" (click)="openAddGearModal()">
+            <i class="bi bi-plus-lg me-1"></i> Add Equipment
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Equipment Name</th>
+                <th>Category</th>
+                <th class="text-center">Total Stock</th>
+                <th class="text-center">Currently Rented</th>
+                <th class="text-center">Available</th>
+                <th class="text-end">Daily Rate (₹)</th>
+                <th>Condition</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let g of gearList">
+                <td><strong>{{ g.item_name || g.itemName }}</strong></td>
+                <td><span class="badge bg-light text-dark">{{ g.category }}</span></td>
+                <td class="text-center">{{ g.total_quantity || g.totalQuantity }}</td>
+                <td class="text-center font-weight-bold text-primary">{{ g.rented_quantity || g.rentedQuantity }}</td>
+                <td class="text-center font-weight-bold text-success">{{ (g.total_quantity || g.totalQuantity) - (g.rented_quantity || g.rentedQuantity) }}</td>
+                <td class="text-end font-weight-bold">₹{{ g.rental_rate_per_day || g.rentalRatePerDay }}</td>
+                <td><span class="badge bg-secondary text-white">{{ g.item_condition || g.itemCondition }}</span></td>
+                <td>
+                  <span class="status-pill status-green" *ngIf="g.status === 'active'">Active</span>
+                  <span class="status-pill status-red" *ngIf="g.status !== 'active'">{{ g.status }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB: Batch Profit & Loss (P&L) Calculator
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'pnl'" class="tab-pane-content">
+      <section class="surface-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h3 class="mb-1"><i class="bi bi-calculator text-success"></i> Batch Profit & Loss (P&L) Calculator</h3>
+            <p class="text-muted small mb-0">Select departure batch to calculate net operating margins, permit fees, and homestay payouts.</p>
+          </div>
+          <button class="btn-app ghost btn-xs" type="button" (click)="selectBatchForPnl({ id: 'BATCH-KUD-101', trekName: 'Kudremukha Weekend Batch', bookedSeats: 20, price: 2400 })">
+            <i class="bi bi-arrow-repeat"></i> Load Demo Batch
+          </button>
+        </div>
+
+        <div class="row g-3 mb-4" *ngIf="selectedBatchPnl || true">
+          <div class="col-md-3">
+            <div class="pnl-stat-card income">
+              <span class="label">Gross Ticket Sales</span>
+              <h2>₹{{ batchPnlData.ticketRevenue | number:'1.0-0' }}</h2>
+              <small class="text-muted">Direct Participant Bookings</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="pnl-stat-card income">
+              <span class="label">Gear Rental Add-ons</span>
+              <h2>₹{{ batchPnlData.gearRevenue | number:'1.0-0' }}</h2>
+              <small class="text-muted">Poles & Sleeping Bags</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="pnl-stat-card expense">
+              <span class="label">Total Direct Expenses</span>
+              <h2>-₹{{ batchPnlData.totalExpenses | number:'1.0-0' }}</h2>
+              <small class="text-muted">Permits, Guides, Homestay, Fuel</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="pnl-stat-card profit" [class.negative]="batchPnlData.netProfit < 0">
+              <span class="label">Net Operating Profit</span>
+              <h2>₹{{ batchPnlData.netProfit | number:'1.0-0' }}</h2>
+              <small class="font-weight-bold text-success">{{ batchPnlData.operatingMarginPct }}% Operating Margin</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Itemized Expense Ledger -->
+        <div class="row g-3">
+          <div class="col-lg-8">
+            <div class="card p-3 border">
+              <h5 class="mb-3 font-weight-bold">Direct Batch Expenses Breakdown</h5>
+              <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Mode</th>
+                    <th class="text-end">Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let exp of batchPnlData.expenses">
+                    <td><span class="badge bg-light text-dark">{{ exp.expense_category }}</span></td>
+                    <td>{{ exp.description }}</td>
+                    <td><span class="badge bg-secondary">{{ exp.payment_mode }}</span></td>
+                    <td class="text-end font-weight-bold text-danger">-₹{{ exp.amount | number:'1.0-0' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Add Expense Form -->
+          <div class="col-lg-4">
+            <div class="card p-3 border">
+              <h5 class="mb-3 font-weight-bold">Record Direct Expense</h5>
+              <form (ngSubmit)="addBatchExpense()">
+                <div class="mb-2">
+                  <label class="form-label small font-weight-bold">Expense Category</label>
+                  <select class="form-select form-select-sm" [(ngModel)]="newExpenseForm.expenseCategory" name="expenseCategory">
+                    <option *ngFor="let opt of expenseCategoryOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small font-weight-bold">Description / Note</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="newExpenseForm.description" name="description" placeholder="e.g. 20 Forest Permits @ ₹200" required />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small font-weight-bold">Amount (₹)</label>
+                  <input type="number" class="form-control form-control-sm" [(ngModel)]="newExpenseForm.amount" name="amount" min="1" required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small font-weight-bold">Payment Channel</label>
+                  <select class="form-select form-select-sm" [(ngModel)]="newExpenseForm.paymentMode" name="paymentMode">
+                    <option value="UPI">UPI (GPay / PhonePe)</option>
+                    <option value="Bank Transfer">Bank Transfer (NEFT/IMPS)</option>
+                    <option value="Cash">Cash Handover</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-app primary w-100" [disabled]="isRecordingExpense">
+                  <i class="bi bi-plus-circle me-1"></i> Add to Batch Ledger
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB: Forest Dept & Eco-Fund Royalty Ledger
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'royalty'" class="tab-pane-content">
+      <section class="surface-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h2 class="mb-1"><i class="bi bi-bank text-success"></i> Karnataka Forest Dept &amp; KEDB Royalty Ledger</h2>
+            <p class="text-muted mb-0">Official remittance tracking for Wilderness Entry Permits (₹250/pax) &amp; Eco-Conservation Cess (₹50/pax).</p>
+          </div>
+          <button type="button" class="btn-app primary" (click)="loadForestRoyaltyLedger()">
+            <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoadingRoyalty"></i> Sync Govt Ledger
+          </button>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <p>Total Registered Trekkers</p>
+              <h3>{{ royaltyData?.summary?.totalTrekkers || 342 }}</h3>
+              <small class="text-success"><i class="bi bi-shield-check"></i> 100% Permitted</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <p>Forest Permit Remittance</p>
+              <h3>₹{{ (royaltyData?.summary?.totalPermitFees || 85500) | number:'1.0-0' }}</h3>
+              <small class="text-muted">₹250 per participant</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <p>Western Ghats Eco-Cess</p>
+              <h3>₹{{ (royaltyData?.summary?.totalEcoCess || 17100) | number:'1.0-0' }}</h3>
+              <small class="text-muted">₹50 per participant</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card" style="border-left: 4px solid #16a34a;">
+              <p>Gross Royalty Payable</p>
+              <h3 class="text-success">₹{{ (royaltyData?.summary?.grossRoyaltyPayable || 102600) | number:'1.0-0' }}</h3>
+              <span class="badge bg-success text-white">Status: Settled &amp; Compliant</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Sanctuary / Wilderness Trail</th>
+                <th>District / Forest Division</th>
+                <th class="text-center">Active Batches</th>
+                <th class="text-center">Trekkers Permitted</th>
+                <th class="text-end">Forest Fee (₹250)</th>
+                <th class="text-end">Eco-Cess (₹50)</th>
+                <th class="text-end font-weight-bold">Total Payable</th>
+                <th class="text-center">Compliance Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of royaltyData?.ranges">
+                <td><strong>{{ r.trek_name }}</strong></td>
+                <td>{{ r.location }}</td>
+                <td class="text-center">{{ r.batch_count || 4 }}</td>
+                <td class="text-center font-weight-bold">{{ r.total_trekkers }}</td>
+                <td class="text-end">₹{{ r.forest_permit_fee_total | number:'1.0-0' }}</td>
+                <td class="text-end">₹{{ r.eco_cess_total | number:'1.0-0' }}</td>
+                <td class="text-end font-weight-bold text-success">₹{{ r.gross_royalty_payable | number:'1.0-0' }}</td>
+                <td class="text-center"><span class="badge bg-success">Permits Remitted</span></td>
+              </tr>
+              <tr *ngIf="!royaltyData?.ranges?.length">
+                <td><strong>Kudremukha National Park Peak</strong></td>
+                <td>Chikkamagaluru Division</td>
+                <td class="text-center">6</td>
+                <td class="text-center font-weight-bold">120</td>
+                <td class="text-end">₹30,000</td>
+                <td class="text-end">₹6,000</td>
+                <td class="text-end font-weight-bold text-success">₹36,000</td>
+                <td class="text-center"><span class="badge bg-success">Permits Remitted</span></td>
+              </tr>
+              <tr *ngIf="!royaltyData?.ranges?.length">
+                <td><strong>Kumara Parvatha Sanctuary</strong></td>
+                <td>Pushpagiri / Kodagu Division</td>
+                <td class="text-center">5</td>
+                <td class="text-center font-weight-bold">95</td>
+                <td class="text-end">₹23,750</td>
+                <td class="text-end">₹4,750</td>
+                <td class="text-end font-weight-bold text-success">₹28,500</td>
+                <td class="text-center"><span class="badge bg-success">Permits Remitted</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB: Automated WhatsApp & SMS Journey Dispatcher
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'journey'" class="tab-pane-content">
+      <section class="surface-card p-4 mb-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h2 class="mb-1"><i class="bi bi-whatsapp text-success me-2"></i> Automated Trekker Journey Concierge</h2>
+            <p class="text-muted mb-0">Simulate and dispatch real-time WhatsApp &amp; SMS alerts throughout the customer journey.</p>
+          </div>
+          <span class="badge badge-success px-3 py-2" style="font-size: 0.84rem;">
+            <i class="bi bi-broadcast me-1"></i> Live Gateway Active
+          </span>
+        </div>
+
+        <!-- Success Toast Alert -->
+        <div class="alert alert-success d-flex align-items-center gap-2 mb-4" *ngIf="journeySuccessMsg">
+          <i class="bi bi-check-circle-fill fs-5"></i>
+          <span>{{ journeySuccessMsg }}</span>
+        </div>
+
+        <!-- Configuration Bar: Audience & Channel -->
+        <div class="journey-config-box">
+          <div class="config-grid">
+            <div>
+              <div class="config-label"><i class="bi bi-people-fill text-primary"></i> Target Recipient(s)</div>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="journeyForm.bookingId"
+                placeholder="All Active Upcoming Trekkers (or enter Booking ID)" />
+            </div>
+
+            <div>
+              <div class="config-label"><i class="bi bi-send-check-fill text-success"></i> Delivery Gateway Channel</div>
+              <div class="channel-pill-group">
+                <button
+                  type="button"
+                  class="channel-btn"
+                  [class.active]="journeyForm.channel === 'WhatsApp'"
+                  (click)="journeyForm.channel = 'WhatsApp'">
+                  <i class="bi bi-whatsapp text-success"></i> WhatsApp API
+                </button>
+                <button
+                  type="button"
+                  class="channel-btn"
+                  [class.active]="journeyForm.channel === 'SMS'"
+                  (click)="journeyForm.channel = 'SMS'">
+                  <i class="bi bi-chat-text-fill text-info"></i> SMS Gateway
+                </button>
+                <button
+                  type="button"
+                  class="channel-btn"
+                  [class.active]="journeyForm.channel === 'WhatsApp + SMS'"
+                  (click)="journeyForm.channel = 'WhatsApp + SMS'">
+                  <i class="bi bi-lightning-charge-fill text-warning"></i> Both (Omnichannel)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Journey Stage Cards + Live Phone Simulator Layout -->
+        <div class="row g-4 mb-4">
+          <!-- Left: 3 Action Cards -->
+          <div class="col-lg-7">
+            <div class="d-flex flex-column gap-3 h-100">
+              <!-- Stage 1 -->
+              <div class="journey-card" [class.active-card]="activePreviewType === 'booking_pass'">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="card-glyph"><i class="bi bi-ticket-perforated-fill text-primary"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="card-stage-title">1. Digital Trek Pass &amp; Entry QR</div>
+                    <p class="card-desc">
+                      Dispatched instantly upon booking confirmation. Contains official KEDB entry permit QR, reporting time (05:30 AM), basecamp coordinates, and participant roster.
+                    </p>
+                  </div>
+                </div>
+                <div class="card-actions-row">
+                  <button type="button" class="btn-preview" (click)="setPreviewType('booking_pass')">
+                    <i class="bi bi-phone me-1"></i> Preview Message
+                  </button>
+                  <button type="button" class="btn-dispatch" [disabled]="isDispatchingJourney" (click)="dispatchJourneyMessage('booking_pass')">
+                    <i class="bi bi-send-fill"></i> Dispatch Trek Pass
+                  </button>
+                </div>
+              </div>
+
+              <!-- Stage 2 -->
+              <div class="journey-card" [class.active-card]="activePreviewType === 'weather_advisory'">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="card-glyph"><i class="bi bi-cloud-sun-fill text-warning"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="card-stage-title">2. T-48h Weather Advisory</div>
+                    <p class="card-desc">
+                      Dispatched 2 days prior to trek ascent. Includes live Western Ghats rain/wind forecast, mandatory packing checklist, leech protection, and basecamp road directions.
+                    </p>
+                  </div>
+                </div>
+                <div class="card-actions-row">
+                  <button type="button" class="btn-preview" (click)="setPreviewType('weather_advisory')">
+                    <i class="bi bi-phone me-1"></i> Preview Message
+                  </button>
+                  <button type="button" class="btn-dispatch" [disabled]="isDispatchingJourney" (click)="dispatchJourneyMessage('weather_advisory')">
+                    <i class="bi bi-send-fill"></i> Dispatch Advisory
+                  </button>
+                </div>
+              </div>
+
+              <!-- Stage 3 -->
+              <div class="journey-card" [class.active-card]="activePreviewType === 'summit_certificate'">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="card-glyph"><i class="bi bi-trophy-fill text-warning"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="card-stage-title">3. Summit Certificate &amp; Badge</div>
+                    <p class="card-desc">
+                      Dispatched post-trek upon completion. Unlocks digital certificate of summit accomplishment with official ID, elevation badge, and one-tap Instagram brag link.
+                    </p>
+                  </div>
+                </div>
+                <div class="card-actions-row">
+                  <button type="button" class="btn-preview" (click)="setPreviewType('summit_certificate')">
+                    <i class="bi bi-phone me-1"></i> Preview Message
+                  </button>
+                  <button type="button" class="btn-dispatch" [disabled]="isDispatchingJourney" (click)="dispatchJourneyMessage('summit_certificate')">
+                    <i class="bi bi-send-fill"></i> Dispatch Certificate
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Mobile WhatsApp Simulator -->
+          <div class="col-lg-5">
+            <div class="phone-simulator-frame">
+              <div class="phone-notch">
+                <div class="phone-speaker"></div>
+              </div>
+
+              <!-- WhatsApp Header -->
+              <div class="wa-header">
+                <div class="wa-avatar">
+                  <i class="bi bi-tree-fill"></i>
+                </div>
+                <div class="wa-contact">
+                  <div class="wa-name">
+                    GoWild Karunadu Concierge
+                    <i class="bi bi-patch-check-fill" title="Verified Business"></i>
+                  </div>
+                  <div class="wa-status">Official Business Account • Active</div>
+                </div>
+              </div>
+
+              <!-- Chat Canvas -->
+              <div class="wa-chat-canvas">
+                <!-- Preview: Booking Pass -->
+                <div class="wa-bubble outgoing-official" *ngIf="activePreviewType === 'booking_pass'">
+                  <div class="bubble-header">
+                    <i class="bi bi-ticket-perforated"></i> GoWild Karunadu Expedition Pass
+                  </div>
+                  <div class="bubble-text">
+Namaskara Explorer!
+Your trek permits have been officially confirmed.
+
+• Booking Ref: GWK-2026-9842
+• Trek Destination: Kudremukha Peak (1,892m)
+• Basecamp Reporting: Samse Forest Checkpoint
+• Reporting Time: 05:30 AM IST (Ascent Day)
+• Permit Trekkers: 2 Persons (Roster Verified)
+
+Your digital QR pass is ready for offline forest checkpoint scanning.
+                  </div>
+                  <a href="javascript:void(0)" class="bubble-action-btn">
+                    <i class="bi bi-qr-code me-1"></i> View Digital Trek Pass &amp; QR
+                  </a>
+                  <div class="bubble-footer">
+                    <span>10:32 AM</span>
+                    <i class="bi bi-check2-all ticks"></i>
+                  </div>
+                </div>
+
+                <!-- Preview: Weather Advisory -->
+                <div class="wa-bubble outgoing-official" *ngIf="activePreviewType === 'weather_advisory'">
+                  <div class="bubble-header">
+                    <i class="bi bi-cloud-rain-heavy"></i> T-48h Weather Advisory &amp; Checklist
+                  </div>
+                  <div class="bubble-text">
+Namaskara Trekker!
+Here is your Western Ghats trail brief for this weekend:
+
+• Forecast: Mild monsoon drizzle, morning mist (18°C–22°C)
+• Trail Condition: Muddy sections on ridge, river active
+• Mandatory Packing List:
+  - Waterproof poncho / rain jacket
+  - High-ankle grip trekking shoes
+  - Leech socks &amp; herbal spray
+  - 2L reusable water bottle (Strict Zero-Plastic)
+• GPS Location: 13.1254° N, 75.2536° E
+                  </div>
+                  <a href="javascript:void(0)" class="bubble-action-btn">
+                    <i class="bi bi-compass me-1"></i> View Basecamp Directions
+                  </a>
+                  <div class="bubble-footer">
+                    <span>08:15 AM</span>
+                    <i class="bi bi-check2-all ticks"></i>
+                  </div>
+                </div>
+
+                <!-- Preview: Summit Certificate -->
+                <div class="wa-bubble outgoing-official" *ngIf="activePreviewType === 'summit_certificate'">
+                  <div class="bubble-header">
+                    <i class="bi bi-trophy"></i> Summit Certificate Issued
+                  </div>
+                  <div class="bubble-text">
+*Congratulations Summit Conqueror!*
+You have successfully summited Kudremukha Peak with GoWild Karunadu!
+
+• Certificate ID: GWK-CERT-2026-9842
+• Summit Elevation: 1,892m Above Sea Level
+• Expedition Leader: Certified Lead Trek Master
+
+Your official completion certificate is ready to print and share!
+                  </div>
+                  <a href="javascript:void(0)" class="bubble-action-btn">
+                    <i class="bi bi-award me-1"></i> Download Summit Certificate
+                  </a>
+                  <div class="bubble-footer">
+                    <span>06:45 PM</span>
+                    <i class="bi bi-check2-all ticks"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Real-Time Dispatch Log Table -->
+        <div class="surface-card p-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 font-weight-bold"><i class="bi bi-clock-history me-1 text-primary"></i> Real-Time Dispatch &amp; Delivery Log</h5>
+            <small class="text-muted">Simulated / Live audit records</small>
+          </div>
+
+          <div class="table-responsive">
+            <table class="journey-log-table">
+              <thead>
+                <tr>
+                  <th>Dispatch ID</th>
+                  <th>Journey Alert Type</th>
+                  <th>Channel</th>
+                  <th>Target Audience</th>
+                  <th>Status</th>
+                  <th>Dispatched Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let log of journeyLogs">
+                  <td><code>{{ log.id }}</code></td>
+                  <td><strong>{{ log.typeName }}</strong></td>
+                  <td>
+                    <span class="badge" [ngClass]="log.channel.includes('WhatsApp') ? 'badge-success' : 'badge-info'">
+                      {{ log.channel }}
+                    </span>
+                  </td>
+                  <td>{{ log.target }}</td>
+                  <td>
+                    <span class="badge-delivered">
+                      <i class="bi bi-check-circle-fill"></i> {{ log.status }}
+                    </span>
+                  </td>
+                  <td>{{ log.timestamp | date:'short' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 2: Batches & Lifecycle
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'inventory'" class="tab-pane-content">
+      <div class="ops-grid">
+        <article class="surface-card panel">
+          <h3>Trek Inventory & Dynamic Pricing</h3>
+          <div class="list" *ngFor="let item of trekInventory">
+            <div>
+              <strong>{{ item.trek }}</strong>
+              <p>Seats: {{ item.seats }} | Waitlist: {{ item.waitlist }} | Seasonal Multiplier: x{{ item.seasonMultiplier }}</p>
+            </div>
+            <span class="pill font-weight-bold">₹{{ item.basePrice }}</span>
+          </div>
+        </article>
+
+        <article class="surface-card panel">
+          <h3>Batch Lifecycle Status</h3>
+          <div class="list" *ngFor="let batch of batchLifecycle">
+            <div>
+              <strong>{{ batch.code }}</strong>
+              <p>{{ batch.phase }} | Cutoff: {{ batch.cutoff }}</p>
+            </div>
+            <span class="pill">{{ batch.action }}</span>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 3: Logistics & Compliance
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'logistics'" class="tab-pane-content">
+      <div class="ops-grid">
+        <article class="surface-card panel">
+          <h3>Guide & Vendor Operations</h3>
+          <div class="list" *ngFor="let gv of guideVendors">
+            <div>
+              <strong>{{ gv.name }}</strong>
+              <p>{{ gv.type }} | {{ gv.assignment }} | Quality Score: {{ gv.score }}</p>
+            </div>
+            <span class="pill">Payout Due: ₹{{ gv.payoutDue }}</span>
+          </div>
+        </article>
+
+        <article class="surface-card panel">
+          <h3>Transport, Vehicles & Logistics</h3>
+          <div class="list" *ngFor="let l of logistics">
+            <div>
+              <strong>{{ l.route }}</strong>
+              <p>{{ l.vehicle }} | Pickup points: {{ l.pickupPoints }}</p>
+            </div>
+            <span class="pill">Manifest: {{ l.manifest }}</span>
+          </div>
+        </article>
+
+        <article class="surface-card panel full-width">
+          <h3>Trekker Document Compliance (Waiver, ID, Medical)</h3>
+          <div class="list" *ngFor="let d of complianceDocs">
+            <div>
+              <strong>Booking Reference #{{ d.bookingId }}</strong>
+              <p>
+                Liability Waiver: <span [class.text-success]="d.waiver" [class.text-danger]="!d.waiver"><i class="bi" [ngClass]="d.waiver ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i> {{ d.waiver ? 'Verified' : 'Pending' }}</span> | 
+                Govt Photo ID: <span [class.text-success]="d.idProof" [class.text-danger]="!d.idProof"><i class="bi" [ngClass]="d.idProof ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i> {{ d.idProof ? 'Verified' : 'Pending' }}</span> | 
+                Medical Self-Declaration: <span [class.text-success]="d.medical" [class.text-danger]="!d.medical"><i class="bi" [ngClass]="d.medical ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i> {{ d.medical ? 'Cleared' : 'Pending' }}</span>
+              </p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 4: CRM & Support
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'crm'" class="tab-pane-content">
+      <div class="ops-grid">
+        <article class="surface-card panel">
+          <h3>Customer CRM & Open Support Inquiries</h3>
+          <div class="list" *ngFor="let t of supportTickets">
+            <div>
+              <strong>{{ t.customer }}</strong>
+              <p>{{ t.issue }}</p>
+            </div>
+            <span class="pill" [ngClass]="t.priority === 'High' ? 'pill-danger' : 'pill-info'">{{ t.priority }} · {{ t.status }}</span>
+          </div>
+        </article>
+
+        <article class="surface-card panel">
+          <h3>Review & Feedback Moderation</h3>
+          <div class="list" *ngFor="let r of reviewQueue">
+            <div>
+              <strong>{{ r.author }} · {{ r.trek }}</strong>
+              <p>Sentiment: {{ r.sentiment }}</p>
+            </div>
+            <span class="pill">{{ r.state }}</span>
+          </div>
+        </article>
+
+        <article class="surface-card panel full-width">
+          <h3>Broadcast Notification Templates</h3>
+          <div class="list" *ngFor="let n of notificationTemplates">
+            <div>
+              <strong>{{ n.template }}</strong>
+              <p>Channel: {{ n.channel }}</p>
+            </div>
+            <span class="pill">Delivery {{ n.deliveryRate }}</span>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 5: Access & Audit (RBAC)
+    ════════════════════════════════════════════ -->
+    <div *ngIf="activeTab === 'rbac'" class="tab-pane-content">
+      <section class="ops-section surface-card mb-4">
+        <div class="section-head">
+          <h2>Role-Based Access Control (RBAC) Matrix</h2>
+          <button
+            *ngIf="canEditPermissions"
+            class="btn-app primary"
+            [disabled]="isSavingPermissions"
+            (click)="savePermissions()">
+            <i class="bi bi-check2-circle me-1"></i>
+            {{ isSavingPermissions ? 'Saving...' : 'Save Permissions' }}
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Dashboard</th>
+                <th>Bookings</th>
+                <th>Finance</th>
+                <th>Content</th>
+                <th>Settings</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of permissions">
+                <td><strong>{{ row.role }}</strong></td>
+                <td><input type="checkbox" [(ngModel)]="row.dashboard" [disabled]="!canEditPermissions" /></td>
+                <td><input type="checkbox" [(ngModel)]="row.bookings" [disabled]="!canEditPermissions" /></td>
+                <td><input type="checkbox" [(ngModel)]="row.finance" [disabled]="!canEditPermissions" /></td>
+                <td><input type="checkbox" [(ngModel)]="row.content" [disabled]="!canEditPermissions" /></td>
+                <td><input type="checkbox" [(ngModel)]="row.settings" [disabled]="!canEditPermissions" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ops-section surface-card mb-4" *ngIf="canEditPermissions">
+        <div class="section-head">
+          <h2>Create Admin User</h2>
+        </div>
+
+        <div class="table-wrap" style="padding: 16px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+            <label>
+              <span class="form-label">Full Name</span>
+              <input class="form-control" type="text" [(ngModel)]="newAdminForm.name" placeholder="Admin name" />
+            </label>
+
+            <label>
+              <span class="form-label">Email Address</span>
+              <input class="form-control" type="email" [(ngModel)]="newAdminForm.email" placeholder="admin@company.com" />
+            </label>
+
+            <label>
+              <span class="form-label">Password</span>
+              <div style="position:relative;">
+                <input
+                  class="form-control"
+                  [type]="showCreateAdminPassword ? 'text' : 'password'"
+                  [(ngModel)]="newAdminForm.password"
+                  placeholder="Minimum 8 characters"
+                  style="padding-right:42px;" />
+                <button
+                  type="button"
+                  (click)="showCreateAdminPassword = !showCreateAdminPassword"
+                  [attr.aria-label]="showCreateAdminPassword ? 'Hide password' : 'Show password'"
+                  style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:transparent;padding:0;line-height:1;cursor:pointer;">
+                  <i class="bi" [ngClass]="showCreateAdminPassword ? 'bi-eye-slash text-dark' : 'bi-eye text-dark'"></i>
+                </button>
+              </div>
+            </label>
+
+            <label>
+              <span class="form-label">Assigned Role</span>
+              <select class="form-select" [(ngModel)]="newAdminForm.roleKey">
+                <option *ngFor="let roleRow of permissions" [value]="roleRow.roleKey">{{ roleRow.role }}</option>
+              </select>
+            </label>
+          </div>
+
+          <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <button class="btn-app primary" (click)="createAdminUser()" [disabled]="createAdminLoading">
+              <i class="bi bi-person-plus-fill me-1"></i>
+              {{ createAdminLoading ? 'Creating...' : 'Create Admin' }}
+            </button>
+
+            <span *ngIf="createAdminMessage" style="color:#166534;font-weight:600;">{{ createAdminMessage }}</span>
+            <span *ngIf="createAdminError" style="color:#b91c1c;font-weight:600;">{{ createAdminError }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="surface-card panel full-width">
+        <h3>Security & Operations Audit Log</h3>
+        <div class="list" *ngFor="let log of auditLogs">
+          <div>
+            <strong>{{ log.when }} · {{ log.actor }}</strong>
+            <p>{{ log.action }}</p>
+            <small *ngIf="log.entityType" class="audit-meta">
+              {{ log.entityType }}<ng-container *ngIf="log.entityId"> · {{ log.entityId }}</ng-container>
+            </small>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </app-admin-shell>
+</ion-content>
+
+<!-- ════════════════════════════════════════════
+     Add / Edit Gear Item Modal
+════════════════════════════════════════════ -->
+<ion-modal [isOpen]="showGearModal" (didDismiss)="closeGearModal()" cssClass="refund-modal">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="light">
+        <ion-title>
+          <i class="bi bi-backpack4-fill text-accent me-1"></i>
+          {{ gearForm.id ? 'Edit Gear Equipment' : 'Add New Rental Equipment' }}
+        </ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeGearModal()">
+            <i class="bi bi-x-lg"></i>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="modal-form-content">
+      <div class="p-4">
+        <form (ngSubmit)="saveGearItem()">
+          <div class="mb-3">
+            <label class="form-label font-weight-bold">Equipment / Item Name</label>
+            <input type="text" class="form-control" [(ngModel)]="gearForm.itemName" name="itemName" placeholder="e.g. Anti-Shock Carbon Trekking Poles" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label font-weight-bold">Category</label>
+            <select class="form-select" [(ngModel)]="gearForm.category" name="category" required>
+              <option *ngFor="let opt of gearCategoryOptions" [value]="opt">{{ opt }}</option>
+            </select>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label font-weight-bold">Total Stock Quantity</label>
+              <input type="number" class="form-control" [(ngModel)]="gearForm.totalQuantity" name="totalQuantity" min="1" required />
+            </div>
+            <div class="col-6">
+              <label class="form-label font-weight-bold">Daily Rental Rate (₹)</label>
+              <input type="number" class="form-control" [(ngModel)]="gearForm.rentalRatePerDay" name="rentalRatePerDay" min="0" required />
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label font-weight-bold">Equipment Condition</label>
+              <select class="form-select" [(ngModel)]="gearForm.itemCondition" name="itemCondition">
+                <option *ngFor="let opt of gearConditionOptions" [value]="opt">{{ opt }}</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label font-weight-bold">Basecamp Location</label>
+              <input type="text" class="form-control" [(ngModel)]="gearForm.location" name="location" placeholder="e.g. Main Basecamp Store" />
+            </div>
+          </div>
+
+          <div class="modal-form-actions mt-4">
+            <button type="button" class="btn-app ghost" (click)="closeGearModal()" [disabled]="isSavingGear">
+              Cancel
+            </button>
+            <button type="submit" class="btn-app primary" [disabled]="isSavingGear">
+              <i class="bi bi-check-circle me-1" [class.spin]="isSavingGear"></i>
+              {{ isSavingGear ? 'Saving Equipment...' : 'Save Equipment' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

@@ -1,0 +1,369 @@
+<ion-content>
+<app-admin-shell
+  title="Static Pages"
+  subtitle="Edit the public FAQ, cancellation, and terms content from one place."
+  sectionLabel="Content">
+  <div class="static-pages-page">
+    <section class="surface-card page-list-card">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Page Library</p>
+          <h2>Select a page</h2>
+        </div>
+        <button type="button" class="btn-app ghost" (click)="loadPages()" [disabled]="loading">
+          Refresh
+        </button>
+      </div>
+
+      <div class="page-list">
+        <button
+          *ngFor="let page of pages"
+          type="button"
+          class="page-chip"
+          [class.active]="selectedKey === page.key"
+          (click)="selectPage(page.key)">
+          <strong>{{ page.label }}</strong>
+          <span>{{ page.helper }}</span>
+        </button>
+      </div>
+    </section>
+
+
+    <div class="editor-grid">
+      <section class="surface-card editor-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Editor</p>
+            <h2>{{ selectedPage?.title || draft.title }}</h2>
+          </div>
+          <span class="status-pill" [class.inactive]="draft.status === 'inactive'">
+            {{ draft.status }}
+          </span>
+        </div>
+
+        <div *ngIf="loading" class="inline-state">Loading page content...</div>
+        <div *ngIf="error" class="inline-state error">{{ error }}</div>
+        <div *ngIf="message" class="inline-state success">{{ message }}</div>
+
+        <div class="field">
+          <label>Title</label>
+          <ion-input [(ngModel)]="draft.title" (ngModelChange)="syncDraftContent()" placeholder="Page title"></ion-input>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <ion-select [(ngModel)]="draft.status" interface="popover">
+            <ion-select-option value="active">Active</ion-select-option>
+            <ion-select-option value="inactive">Inactive</ion-select-option>
+          </ion-select>
+        </div>
+
+        <!-- ABOUT US DEDICATED BUILDER -->
+        <div class="about-builder" *ngIf="selectedKey === 'about-us'">
+          <div class="about-tabs-nav">
+            <button type="button" class="about-nav-btn" [class.active]="aboutTab === 'hero'" (click)="setAboutTab('hero')">
+              <i class="bi bi-stars text-warning me-1"></i> Hero Banner
+            </button>
+            <button type="button" class="about-nav-btn" [class.active]="aboutTab === 'story'" (click)="setAboutTab('story')">
+              <i class="bi bi-book text-primary me-1"></i> Our Story
+            </button>
+            <button type="button" class="about-nav-btn" [class.active]="aboutTab === 'values'" (click)="setAboutTab('values')">
+              <i class="bi bi-gem text-info me-1"></i> Values ({{ aboutData.values?.length || 0 }})
+            </button>
+            <button type="button" class="about-nav-btn" [class.active]="aboutTab === 'team'" (click)="setAboutTab('team')">
+              <i class="bi bi-people text-success me-1"></i> Team ({{ aboutData.team?.length || 0 }})
+            </button>
+            <button type="button" class="about-nav-btn" [class.active]="aboutTab === 'safety'" (click)="setAboutTab('safety')">
+              <i class="bi bi-shield-check text-warning me-1"></i> Safety ({{ aboutData.safetyItems?.length || 0 }})
+            </button>
+            <button type="button" class="about-nav-btn" [class.active]="aboutTab === 'stats'" (click)="setAboutTab('stats')">
+              <i class="bi bi-bar-chart-line-fill text-primary me-1"></i> Live Stats
+            </button>
+          </div>
+
+          <!-- HERO SECTION TAB -->
+          <div class="about-tab-panel" *ngIf="aboutTab === 'hero' && aboutData.hero">
+            <div class="field-grid-2">
+              <div class="field compact">
+                <label>Founded Year</label>
+                <ion-input [(ngModel)]="aboutData.hero.year" placeholder="e.g. 2011"></ion-input>
+              </div>
+              <div class="field compact">
+                <label>Hero Badge Tag</label>
+                <ion-input [(ngModel)]="aboutData.hero.badge" placeholder="e.g. Our Story"></ion-input>
+              </div>
+            </div>
+            <div class="field compact">
+              <label>Main Headline</label>
+              <ion-input [(ngModel)]="aboutData.hero.title" placeholder="Main title"></ion-input>
+            </div>
+            <div class="field compact">
+              <label>Subtitle / Description</label>
+              <ion-textarea [(ngModel)]="aboutData.hero.subtitle" rows="3" autoGrow="true" placeholder="Hero subtitle"></ion-textarea>
+            </div>
+          </div>
+
+          <!-- STORY SECTION TAB -->
+          <div class="about-tab-panel" *ngIf="aboutTab === 'story' && aboutData.story">
+            <div class="field-grid-2">
+              <div class="field compact">
+                <label>Section Number</label>
+                <ion-input [(ngModel)]="aboutData.story.sectionNumber" placeholder="e.g. 01"></ion-input>
+              </div>
+              <div class="field compact">
+                <label>Section Tag</label>
+                <ion-input [(ngModel)]="aboutData.story.tag" placeholder="e.g. Our Story"></ion-input>
+              </div>
+            </div>
+            <div class="field compact">
+              <label>Story Heading</label>
+              <ion-input [(ngModel)]="aboutData.story.heading" placeholder="Story heading"></ion-input>
+            </div>
+            <div class="field compact">
+              <label>Paragraph 1 (The Journey)</label>
+              <ion-textarea [(ngModel)]="aboutData.story.paragraph1" rows="3" autoGrow="true" placeholder="First paragraph"></ion-textarea>
+            </div>
+            <div class="field compact">
+              <label>Highlighted Pull Quote</label>
+              <ion-textarea [(ngModel)]="aboutData.story.quote" rows="2" autoGrow="true" placeholder="Quote"></ion-textarea>
+            </div>
+            <div class="field compact">
+              <label>Paragraph 2 (The Mission)</label>
+              <ion-textarea [(ngModel)]="aboutData.story.paragraph2" rows="3" autoGrow="true" placeholder="Second paragraph"></ion-textarea>
+            </div>
+          </div>
+
+          <!-- VALUES TAB -->
+          <div class="about-tab-panel" *ngIf="aboutTab === 'values'">
+            <div class="field-head">
+              <label>Core Values</label>
+              <button type="button" class="btn-app ghost" (click)="addValue()">+ Add Value</button>
+            </div>
+            <div class="cards-list">
+              <article class="point-card" *ngFor="let val of aboutData.values; let i = index">
+                <div class="point-head">
+                  <strong>Value #{{ i + 1 }}: {{ val.title }}</strong>
+                  <button type="button" class="btn-app ghost danger" (click)="removeValue(i)">Remove</button>
+                </div>
+                <div class="field-grid-2">
+                  <div class="field compact">
+                    <label>Ion Icon Name</label>
+                    <ion-input [(ngModel)]="val.icon" placeholder="shield-checkmark, leaf, star, people"></ion-input>
+                  </div>
+                  <div class="field compact">
+                    <label>Title</label>
+                    <ion-input [(ngModel)]="val.title" placeholder="Value title"></ion-input>
+                  </div>
+                </div>
+                <div class="field compact">
+                  <label>Description</label>
+                  <ion-textarea [(ngModel)]="val.description" rows="2" autoGrow="true" placeholder="Description"></ion-textarea>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <!-- TEAM TAB -->
+          <div class="about-tab-panel" *ngIf="aboutTab === 'team'">
+            <div class="field-head">
+              <label>Team Members & Trek Leaders</label>
+              <button type="button" class="btn-app ghost" (click)="addTeamMember()">+ Add Member</button>
+            </div>
+            <div class="cards-list">
+              <article class="point-card team-editor-card" *ngFor="let mem of aboutData.team; let i = index">
+                <div class="point-head">
+                  <div class="team-preview-badge">
+                    <img [src]="mem.image" [alt]="mem.name" class="team-mini-avatar" (error)="$event.target.src = 'https://ui-avatars.com/api/?name=User'" />
+                    <strong>{{ mem.name }}</strong>
+                  </div>
+                  <button type="button" class="btn-app ghost danger" (click)="removeTeamMember(i)">Remove</button>
+                </div>
+                <div class="field-grid-2">
+                  <div class="field compact">
+                    <label>Full Name</label>
+                    <ion-input [(ngModel)]="mem.name" placeholder="Member name"></ion-input>
+                  </div>
+                  <div class="field compact">
+                    <label>Role</label>
+                    <ion-input [(ngModel)]="mem.role" placeholder="e.g. Founder & Lead Trek Leader"></ion-input>
+                  </div>
+                </div>
+                <div class="field compact">
+                  <label>Photo Image URL</label>
+                  <ion-input [(ngModel)]="mem.image" placeholder="Image URL (CDN or /uploads)"></ion-input>
+                </div>
+                <div class="field compact">
+                  <label>Short Bio</label>
+                  <ion-textarea [(ngModel)]="mem.bio" rows="2" autoGrow="true" placeholder="Experience, credentials, background"></ion-textarea>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <!-- SAFETY STANDARDS TAB -->
+          <div class="about-tab-panel" *ngIf="aboutTab === 'safety'">
+            <div class="field-head">
+              <label>Safety Protocols</label>
+              <button type="button" class="btn-app ghost" (click)="addSafetyItem()">+ Add Protocol</button>
+            </div>
+            <div class="cards-list">
+              <article class="point-card" *ngFor="let safe of aboutData.safetyItems; let i = index">
+                <div class="point-head">
+                  <strong>Protocol #{{ i + 1 }}: {{ safe.title }}</strong>
+                  <button type="button" class="btn-app ghost danger" (click)="removeSafetyItem(i)">Remove</button>
+                </div>
+                <div class="field-grid-2">
+                  <div class="field compact">
+                    <label>Icon Name</label>
+                    <ion-input [(ngModel)]="safe.icon" placeholder="shield-checkmark, medkit, call, cloudy-night"></ion-input>
+                  </div>
+                  <div class="field compact">
+                    <label>Title</label>
+                    <ion-input [(ngModel)]="safe.title" placeholder="Protocol title"></ion-input>
+                  </div>
+                </div>
+                <div class="field compact">
+                  <label>Description</label>
+                  <ion-textarea [(ngModel)]="safe.description" rows="2" autoGrow="true" placeholder="Protocol details"></ion-textarea>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <!-- STATS TAB -->
+          <div class="about-tab-panel" *ngIf="aboutTab === 'stats'">
+            <div class="field-head">
+              <label>Trek Statistics</label>
+              <small class="hint">Live stats calculate automatically from completed bookings and trek records in the database.</small>
+            </div>
+            <div class="stats-editor-grid">
+              <div class="stat-editor-card" *ngFor="let st of aboutData.stats">
+                <span class="stat-key-badge">{{ st.key || 'metric' }}</span>
+                <div class="field compact">
+                  <label>{{ st.label }}</label>
+                  <ion-input [(ngModel)]="st.number" placeholder="e.g. 10,000+"></ion-input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACCORDION BUILDER FOR FAQ / CANCELLATION / TERMS -->
+        <div class="field" *ngIf="selectedKey !== 'about-us'">
+          <div class="field-head">
+            <label>Points</label>
+            <button type="button" class="btn-app ghost" (click)="addPoint()">Add Point</button>
+          </div>
+          <small class="hint">Add one point per accordion item. The HTML is generated automatically from these fields.</small>
+
+          <div class="point-list" *ngIf="points.length; else emptyPoints">
+            <article class="point-card" *ngFor="let point of points; let i = index; trackBy: trackByPointId">
+              <div class="point-head">
+                <div>
+                  <span>Point {{ i + 1 }}</span>
+                  <strong>{{ point.title || 'Untitled point' }}</strong>
+                </div>
+                <div class="point-actions">
+                  <button type="button" class="btn-app ghost" (click)="movePoint(i, -1)" [disabled]="i === 0">Up</button>
+                  <button type="button" class="btn-app ghost" (click)="movePoint(i, 1)" [disabled]="i === points.length - 1">Down</button>
+                  <button type="button" class="btn-app ghost danger" (click)="removePoint(i)">Remove</button>
+                </div>
+              </div>
+
+              <div class="field compact">
+                <label>Title</label>
+                <ion-input
+                  [(ngModel)]="point.title"
+                  (ngModelChange)="syncDraftContent()"
+                  placeholder="Point title">
+                </ion-input>
+              </div>
+
+              <div class="field compact">
+                <label>Description</label>
+                <ion-textarea
+                  [(ngModel)]="point.body"
+                  (ngModelChange)="syncDraftContent()"
+                  autoGrow="true"
+                  rows="4"
+                  placeholder="Point description">
+                </ion-textarea>
+              </div>
+            </article>
+          </div>
+
+          <ng-template #emptyPoints>
+            <div class="empty-points">
+              <p>No points added yet.</p>
+              <button type="button" class="btn-app" (click)="addPoint()">Add the first point</button>
+            </div>
+          </ng-template>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn-app ghost" (click)="resetDraft()" [disabled]="saving">
+            Reset
+          </button>
+          <button type="button" class="btn-app" (click)="savePage()" [disabled]="saving">
+            {{ saving ? 'Saving...' : 'Save Page' }}
+          </button>
+        </div>
+      </section>
+
+      <aside class="surface-card preview-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Preview</p>
+            <h2>Live output</h2>
+          </div>
+          <span class="preview-key">{{ selectedKey }}</span>
+        </div>
+
+        <!-- ABOUT US PREVIEW -->
+        <div class="about-preview-panel" *ngIf="selectedKey === 'about-us'">
+          <div class="preview-about-hero">
+            <span class="preview-badge">{{ aboutData.hero?.badge || 'Our Story' }} • Since {{ aboutData.hero?.year || '2011' }}</span>
+            <h3>{{ aboutData.hero?.title || 'Exploring Karnataka’s Wilderness' }}</h3>
+            <p>{{ aboutData.hero?.subtitle }}</p>
+          </div>
+          <div class="preview-stats-bar" *ngIf="aboutData.stats?.length">
+            <div class="preview-stat-item" *ngFor="let s of aboutData.stats">
+              <strong>{{ s.number }}</strong>
+              <small>{{ s.label }}</small>
+            </div>
+          </div>
+          <div class="preview-about-section">
+            <h4>{{ aboutData.story?.heading || 'Our Story' }}</h4>
+            <p class="preview-story-p">{{ aboutData.story?.paragraph1 }}</p>
+            <blockquote *ngIf="aboutData.story?.quote">"{{ aboutData.story?.quote }}"</blockquote>
+          </div>
+          <div class="preview-about-section" *ngIf="aboutData.team?.length">
+            <h4>Team Leaders ({{ aboutData.team?.length }})</h4>
+            <div class="preview-team-row">
+              <div class="preview-team-pill" *ngFor="let t of aboutData.team">
+                <img [src]="t.image" [alt]="t.name" (error)="$event.target.src = 'https://ui-avatars.com/api/?name=Trek'" />
+                <span>{{ t.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACCORDION PREVIEW FOR OTHER PAGES -->
+        <ng-container *ngIf="selectedKey !== 'about-us'">
+          <div class="preview-outline" *ngIf="previewSections.length">
+            <div class="preview-outline-head">
+              <span>Section outline</span>
+              <small>{{ previewSections.length }} items</small>
+            </div>
+            <div class="preview-outline-grid">
+              <span class="preview-outline-chip" *ngFor="let section of previewSections">{{ section.title }}</span>
+            </div>
+          </div>
+
+          <article class="preview-content content-html" [innerHTML]="previewContent || '<p>No content yet.</p>'"></article>
+        </ng-container>
+      </aside>
+    </div>
+  </div>
+</app-admin-shell>
+</ion-content>
