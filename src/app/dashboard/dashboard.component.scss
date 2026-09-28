@@ -148,10 +148,13 @@
    STATS GRID
    ───────────────────────────────────────────── */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+    display: flex;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+    scrollbar-width: thin;
+    overflow: auto;
+    min-width: 0;
 }
 
 .stat-card {

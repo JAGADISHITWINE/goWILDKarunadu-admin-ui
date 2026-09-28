@@ -150,10 +150,15 @@
           <div class="field-group">
             <label>Publication Status</label>
             <select formControlName="status" class="app-select">
-              <option value="draft">Draft</option>
-              <option value="pending">Pending Approval</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="published">Published</option>
+              <ng-container *ngIf="statusOptions.length > 0; else defaultBlogStatuses">
+                <option *ngFor="let opt of statusOptions" [value]="opt.value">{{ opt.label }}</option>
+              </ng-container>
+              <ng-template #defaultBlogStatuses>
+                <option value="draft">Draft</option>
+                <option value="pending">Pending Approval</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </ng-template>
             </select>
           </div>
 

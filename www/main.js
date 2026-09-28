@@ -122,121 +122,121 @@ var routes = [
     path: "admin/dashboard",
     canActivate: [AuthGuard],
     data: { permission: "dashboard.view" },
-    loadChildren: () => import("./dashboard-module-KDDGUORH.js").then((m) => m.DashboardModule)
+    loadChildren: () => import("./dashboard-module-67XML4P4.js").then((m) => m.DashboardModule)
   },
   {
     path: "admin/treks/list",
     canActivate: [AuthGuard],
     data: { permission: "treks.view" },
-    loadChildren: () => import("./trek-list-module-YOPC5TIB.js").then((m) => m.TrekListModule)
+    loadChildren: () => import("./trek-list-module-5XQP4UCY.js").then((m) => m.TrekListModule)
   },
   {
     path: "admin/treks/add",
     canActivate: [AuthGuard],
     data: { permission: "treks.manage" },
-    loadChildren: () => import("./trek-add-module-L6CRQTLR.js").then((m) => m.TrekAddModule)
+    loadChildren: () => import("./trek-add-module-CO7ZCUOQ.js").then((m) => m.TrekAddModule)
   },
   {
     path: "admin/treks/edit",
     canActivate: [AuthGuard],
     data: { permission: "treks.manage" },
-    loadChildren: () => import("./trek-edit-module-LYAEIGQX.js").then((m) => m.TrekEditModule)
+    loadChildren: () => import("./trek-edit-module-YVDOYRDM.js").then((m) => m.TrekEditModule)
   },
   {
     path: "admin/bookings",
     canActivate: [AuthGuard],
     data: { permission: "bookings.view" },
-    loadChildren: () => import("./bookings-module-BGRUGANB.js").then((m) => m.BookingsModule)
+    loadChildren: () => import("./bookings-module-OBIMQ5IN.js").then((m) => m.BookingsModule)
   },
   {
     path: "admin/users",
     canActivate: [AuthGuard],
     data: { permission: "users.view" },
-    loadChildren: () => import("./users-module-2DFGDHR2.js").then((m) => m.UsersModule)
+    loadChildren: () => import("./users-module-V4KSDH4H.js").then((m) => m.UsersModule)
   },
   {
     path: "admin/reviews",
     canActivate: [AuthGuard],
     data: { permission: "reviews.view" },
-    loadChildren: () => import("./reviews-module-NOVZWUA7.js").then((m) => m.ReviewsModule)
+    loadChildren: () => import("./reviews-module-YBBBNEVL.js").then((m) => m.ReviewsModule)
   },
   {
     path: "admin/blog/posts",
     canActivate: [AuthGuard],
     data: { permission: "blog.view" },
-    loadChildren: () => import("./posts-list-module-A5PMRTRT.js").then((m) => m.PostsListModule)
+    loadChildren: () => import("./posts-list-module-ZB2NZDQT.js").then((m) => m.PostsListModule)
   },
   {
     path: "admin/blog/editor",
     canActivate: [AuthGuard],
     data: { permission: "blog.manage" },
-    loadChildren: () => import("./post-editor-module-VNKSRHFU.js").then((m) => m.PostEditorModule)
+    loadChildren: () => import("./post-editor-module-WIW5SRQX.js").then((m) => m.PostEditorModule)
   },
   {
     path: "admin/content-pages",
     canActivate: [AuthGuard],
     data: { permission: "blog.manage" },
-    loadChildren: () => import("./static-pages-module-CZJGRWHC.js").then((m) => m.StaticPagesModule)
+    loadChildren: () => import("./static-pages-module-2P2NCABD.js").then((m) => m.StaticPagesModule)
   },
   {
     path: "admin/revenue",
     canActivate: [AuthGuard],
     data: { permission: "finance.view" },
-    loadChildren: () => import("./analytics-module-CWUNKLGU.js").then((m) => m.AnalyticsModule)
+    loadChildren: () => import("./analytics-module-3XVTWS4N.js").then((m) => m.AnalyticsModule)
   },
   {
     path: "admin/trek-details",
     canActivate: [AuthGuard],
     data: { permission: "treks.view" },
-    loadChildren: () => import("./tour-details-module-G743XRW5.js").then((m) => m.TourDetailsModule)
+    loadChildren: () => import("./tour-details-module-CHW77DB6.js").then((m) => m.TourDetailsModule)
   },
   {
     path: "admin/batch-management",
     canActivate: [AuthGuard],
     data: { permission: "bookings.manage" },
-    loadChildren: () => import("./trek-batch-management-module-RNOP3I33.js").then((m) => m.TrekBatchManagementModule)
+    loadChildren: () => import("./trek-batch-management-module-6ADJR6PX.js").then((m) => m.TrekBatchManagementModule)
   },
   {
     path: "admin/operations",
     canActivate: [AuthGuard],
     data: { permission: "operations.view" },
-    loadChildren: () => import("./operations-center-module-UJFI55Q5.js").then((m) => m.OperationsCenterModule)
+    loadChildren: () => import("./operations-center-module-H332XHWW.js").then((m) => m.OperationsCenterModule)
   },
   {
     path: "admin/notifications",
     canActivate: [AuthGuard],
     data: { permission: "notifications.view" },
-    loadChildren: () => import("./notifications.module-62GKLP73.js").then((m) => m.NotificationsModule)
+    loadChildren: () => import("./notifications.module-G77FNCJX.js").then((m) => m.NotificationsModule)
   },
   {
     path: "admin/dropdowns",
     canActivate: [AuthGuard],
     data: { permission: "dropdowns.manage" },
-    loadChildren: () => import("./dropdown-manager.module-ILWZT32C.js").then((m) => m.DropdownManagerModule)
+    loadChildren: () => import("./dropdown-manager.module-JLYJCXE2.js").then((m) => m.DropdownManagerModule)
   },
   {
     path: "admin/categories",
     canActivate: [AuthGuard],
     data: { permission: "dropdowns.manage" },
-    loadChildren: () => import("./category-manager.module-XV2C5YZR.js").then((m) => m.CategoryManagerModule)
+    loadChildren: () => import("./category-manager.module-JPBF3LLU.js").then((m) => m.CategoryManagerModule)
   },
   {
     path: "admin/referrals",
     canActivate: [AuthGuard],
     data: { permission: "referrals.manage" },
-    loadChildren: () => import("./referral-settings.module-Q2JONSU6.js").then((m) => m.ReferralSettingsModule)
+    loadChildren: () => import("./referral-settings.module-KEBIRDHF.js").then((m) => m.ReferralSettingsModule)
   },
   {
     path: "admin/coupons",
     canActivate: [AuthGuard],
     data: { permission: "treks.manage" },
-    loadChildren: () => import("./coupon-manager.module-DZGGMNN3.js").then((m) => m.CouponManagerModule)
+    loadChildren: () => import("./coupon-manager.module-2TYX4QAA.js").then((m) => m.CouponManagerModule)
   },
   {
     path: "admin/settings",
     canActivate: [AuthGuard],
     data: { permission: "dashboard.view" },
-    loadChildren: () => import("./settings.module-C22VILEZ.js").then((m) => m.SettingsModule)
+    loadChildren: () => import("./settings.module-HZBBJQUD.js").then((m) => m.SettingsModule)
   },
   {
     path: "**",

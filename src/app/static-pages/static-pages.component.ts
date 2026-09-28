@@ -330,54 +330,30 @@ export class StaticPagesComponent implements OnInit {
         title: point.title,
         body: point.body,
       })),
+      content,
     }).subscribe({
       next: (page) => {
         const responseContent = page?.content || content.trim();
+        const updatedPage: StaticPageRecord = {
+          ...(this.selectedPage || {}),
+          ...(page || {}),
+          pageKey: this.selectedKey,
+          title: page?.title || this.draft.title.trim(),
+          content: responseContent,
+          status: page?.status || this.draft.status,
+          sortOrder: page?.sortOrder ?? this.selectedPage?.sortOrder,
+        };
 
-        this.staticPagesService.getPage(this.selectedKey).subscribe({
-          next: (freshPage) => {
-            const updatedPage: StaticPageRecord = {
-              ...(this.selectedPage || {}),
-              ...(freshPage || page || {}),
-              pageKey: this.selectedKey,
-              title: freshPage?.title || page?.title || this.draft.title.trim(),
-              content: freshPage?.content || responseContent,
-              status: freshPage?.status || page?.status || this.draft.status,
-              sortOrder: freshPage?.sortOrder ?? page?.sortOrder ?? this.selectedPage?.sortOrder,
-            };
-
-            this.records.set(this.selectedKey, updatedPage);
-            this.draft.title = updatedPage.title;
-            this.draft.content = updatedPage.content;
-            this.draft.status = updatedPage.status || 'active';
-            this.points = this.extractPoints(updatedPage.content, this.selectedKey);
-            if (!this.points.length) {
-              this.points = this.getAccordionTemplatePoints(this.selectedKey);
-            }
-            this.saving = false;
-            this.message = 'Page saved successfully.';
-          },
-          error: () => {
-            const updatedPage: StaticPageRecord = {
-              ...(this.selectedPage || {}),
-              ...(page || {}),
-              pageKey: this.selectedKey,
-              title: page?.title || this.draft.title.trim(),
-              content: responseContent,
-              status: page?.status || this.draft.status,
-              sortOrder: page?.sortOrder ?? this.selectedPage?.sortOrder,
-            };
-
-            this.records.set(this.selectedKey, updatedPage);
-            this.draft.content = updatedPage.content;
-            this.points = this.extractPoints(updatedPage.content, this.selectedKey);
-            if (!this.points.length) {
-              this.points = this.getAccordionTemplatePoints(this.selectedKey);
-            }
-            this.saving = false;
-            this.message = 'Page saved successfully.';
-          },
-        });
+        this.records.set(this.selectedKey, updatedPage);
+        this.draft.title = updatedPage.title;
+        this.draft.content = updatedPage.content;
+        this.draft.status = updatedPage.status || 'active';
+        this.points = this.extractPoints(updatedPage.content, this.selectedKey);
+        if (!this.points.length) {
+          this.points = this.getAccordionTemplatePoints(this.selectedKey);
+        }
+        this.saving = false;
+        this.message = 'Page saved successfully.';
       },
       error: (err) => {
         this.saving = false;

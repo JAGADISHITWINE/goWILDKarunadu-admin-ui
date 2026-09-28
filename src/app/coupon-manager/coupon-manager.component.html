@@ -83,8 +83,13 @@
         <div class="form-group">
           <label>Discount Type <span class="req">*</span></label>
           <select class="app-select" [(ngModel)]="form.discountType">
-            <option value="percentage">Percentage Discount (%)</option>
-            <option value="flat">Flat Amount (₹)</option>
+            <ng-container *ngIf="discountTypeOptions.length > 0; else defaultDiscountTypes">
+              <option *ngFor="let opt of discountTypeOptions" [value]="opt.value">{{ opt.label }}</option>
+            </ng-container>
+            <ng-template #defaultDiscountTypes>
+              <option value="percentage">Percentage Discount (%)</option>
+              <option value="flat">Flat Amount (₹)</option>
+            </ng-template>
           </select>
         </div>
 

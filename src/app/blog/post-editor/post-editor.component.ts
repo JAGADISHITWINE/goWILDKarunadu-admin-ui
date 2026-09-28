@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PostEditor } from '../post-editor';
-import { DropdownManagerService } from 'src/app/dropdown-manager/dropdown-manager.service';
+import { DropdownManagerService, DropdownOption } from 'src/app/dropdown-manager/dropdown-manager.service';
 import { take } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { MediaService } from 'src/app/core/media.service';
@@ -31,6 +31,7 @@ export class PostEditorComponent implements OnInit {
   existingImageUrl: string | null = null;
 
   categories: string[] = [];
+  statusOptions: DropdownOption[] = [];
   isContentPreview: boolean = false;
   isLoading = false;
 
@@ -71,6 +72,12 @@ export class PostEditorComponent implements OnInit {
     this.dropdownService.getGroupOptions('blogCategory').pipe(take(1)).subscribe((options) => {
       if (options.length > 0) {
         this.categories = options.map((o) => o.label);
+      }
+    });
+
+    this.dropdownService.getGroupOptions('blogStatus').pipe(take(1)).subscribe((options) => {
+      if (options.length > 0) {
+        this.statusOptions = options;
       }
     });
   }

@@ -6,6 +6,7 @@ import { AuthService } from 'src/app/core/services/auth.service';
 import { AdminShellComponent } from '../shared/admin-shell/admin-shell.component';
 import { TrekList } from '../treks/trek-list/trek-list';
 import { Coupon, CouponManagerService, CouponPayload } from './coupon-manager.service';
+import { DropdownManagerService, DropdownOption } from '../dropdown-manager/dropdown-manager.service';
 
 interface TrekOption {
   id: string;
@@ -29,6 +30,8 @@ export class CouponManagerComponent implements OnInit {
 
   treks: TrekOption[] = [];
   coupons: Coupon[] = [];
+
+  discountTypeOptions: DropdownOption[] = [];
 
   filterTrekId: string | null = null;
   searchQuery: string = '';
@@ -120,11 +123,27 @@ export class CouponManagerComponent implements OnInit {
   constructor(
     private trekService: TrekList,
     private couponService: CouponManagerService,
+    private dropdownService: DropdownManagerService,
     public authService: AuthService
   ) { }
 
   ngOnInit(): void {
+    this.loadDropdowns();
     this.loadInitial();
+  }
+
+  private loadDropdowns(): void {
+    this.dropdownService.getGroupOptions('couponDiscountType').subscribe((opts) => {
+      if (opts.length > 0) {
+        this.discountTypeOptions = opts;
+      }
+    });
+
+    this.dropdownService.getGroupOptions('pageSizeOptions').subscribe((opts) => {
+      if (opts.length > 0) {
+        this.pageSizeOptions = opts.map(o => Number(o.value || o.label)).filter(n => !isNaN(n));
+      }
+    });
   }
 
   get stats() {

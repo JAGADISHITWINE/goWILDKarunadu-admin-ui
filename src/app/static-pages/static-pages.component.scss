@@ -139,6 +139,25 @@
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   gap: 18px;
+  align-items: start;
+}
+
+.preview-card {
+  align-self: start;
+  position: sticky;
+  top: 90px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(13, 124, 134, 0.25) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(13, 124, 134, 0.2);
+    border-radius: 6px;
+  }
 }
 
 .field {
@@ -154,6 +173,32 @@
 .field label {
   font-weight: 700;
   color: #17324d;
+}
+
+.modern-input,
+.modern-textarea,
+.modern-select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(14, 27, 43, 0.12);
+  background: #ffffff;
+  color: #10263c;
+  font-size: 0.92rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  outline: none;
+
+  &:focus {
+    border-color: #0d7c86;
+    box-shadow: 0 0 0 3px rgba(13, 124, 134, 0.15);
+  }
+}
+
+.modern-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
 }
 
 .field-head {

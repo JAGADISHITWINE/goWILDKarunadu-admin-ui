@@ -626,8 +626,7 @@
             <div class="col-12 col-sm-6 col-md-4">
               <label class="form-label">Discount Type</label>
               <select class="form-select modern-select" formControlName="discountType">
-                <option value="percentage">Percentage (%)</option>
-                <option value="flat">Flat Cash (₹)</option>
+                <option *ngFor="let dt of discountTypes" [value]="dt.value">{{ dt.label }}</option>
               </select>
             </div>
 

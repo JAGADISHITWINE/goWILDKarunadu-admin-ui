@@ -8,6 +8,7 @@ import { catchError, finalize, forkJoin, map, of } from 'rxjs';
 import { AdminShellComponent } from '../shared/admin-shell/admin-shell.component';
 import { NotificationService } from 'src/app/core/services/notification.service';
 import { MediaService } from 'src/app/core/media.service';
+import { DropdownManagerService } from 'src/app/dropdown-manager/dropdown-manager.service';
 
 @Component({
   selector: 'app-trek-batch-management',
@@ -125,7 +126,8 @@ export class TrekBatchManagementComponent implements OnInit, OnDestroy {
     public authService: AuthService,
     private router: Router,
     private notificationService: NotificationService,
-    private media: MediaService
+    private media: MediaService,
+    private dropdownService: DropdownManagerService
   ) { }
 
   resolveImageUrl(imagePath: string | null | undefined, cacheKey?: string | number | null): string {
@@ -133,9 +135,18 @@ export class TrekBatchManagementComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.loadDropdowns();
     this.loadTreks();
     this.loadCompletionStats();
     this.loadAutoCompleteStatus();
+  }
+
+  private loadDropdowns() {
+    this.dropdownService.getGroupOptions('pageSizeOptions').subscribe(opts => {
+      if (opts.length > 0) {
+        this.pageSizeOptions = opts.map(o => Number(o.value || o.label)).filter(n => !isNaN(n));
+      }
+    });
   }
 
   setViewMode(mode: 'treks' | 'calendar') {

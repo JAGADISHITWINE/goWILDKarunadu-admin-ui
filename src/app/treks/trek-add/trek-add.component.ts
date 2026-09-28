@@ -54,6 +54,10 @@ export class TrekAddComponent implements OnInit, OnDestroy {
   collections: string[] = ['Western Ghats Peaks', 'Monsoon Specials', 'Heritage & Trails', 'Weekend Escapes', 'Family Friendly'];
   fitnessLevels: string[] = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
   batchStatuses: string[] = ['active', 'inactive', 'full', 'cancelled', 'completed'];
+  discountTypes: Array<{ value: string; label: string }> = [
+    { value: 'percentage', label: 'Percentage (%)' },
+    { value: 'flat', label: 'Flat Cash (₹)' },
+  ];
 
   readonly sections: Array<{ id: TrekFormSection; label: string; icon: string; badge?: string }> = [
     { id: 'basic', label: '1. Trek Basics', icon: 'bi-geo-alt-fill' },
@@ -154,6 +158,10 @@ export class TrekAddComponent implements OnInit, OnDestroy {
 
     this.dropdownService.getGroupOptions('batchStatus').pipe(take(1)).subscribe((opts) => {
       if (opts.length > 0) this.batchStatuses = opts.map((o) => o.label);
+    });
+
+    this.dropdownService.getGroupOptions('couponDiscountType').pipe(take(1)).subscribe((opts) => {
+      if (opts.length > 0) this.discountTypes = opts.map((o) => ({ value: o.value, label: o.label }));
     });
   }
 

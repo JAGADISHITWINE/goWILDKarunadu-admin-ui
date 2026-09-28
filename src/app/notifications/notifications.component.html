@@ -47,21 +47,31 @@
               <label>
                 <span>Category / Type</span>
                 <select class="form-select" [(ngModel)]="composerForm.type">
-                  <option value="booking">Booking Update</option>
-                  <option value="trek">Trek Alert</option>
-                  <option value="weather">Weather Alert</option>
-                  <option value="guide">Guide Notice</option>
-                  <option value="offer">Special Offer</option>
-                  <option value="system">System Notice</option>
-                  <option value="blog">Blog Story</option>
+                  <ng-container *ngIf="notificationTypeOptions.length > 0; else defaultNotificationTypes">
+                    <option *ngFor="let opt of notificationTypeOptions" [value]="opt.value">{{ opt.label }}</option>
+                  </ng-container>
+                  <ng-template #defaultNotificationTypes>
+                    <option value="booking">Booking Update</option>
+                    <option value="trek">Trek Alert</option>
+                    <option value="weather">Weather Alert</option>
+                    <option value="guide">Guide Notice</option>
+                    <option value="offer">Special Offer</option>
+                    <option value="system">System Notice</option>
+                    <option value="blog">Blog Story</option>
+                  </ng-template>
                 </select>
               </label>
               <label>
                 <span>Target Audience</span>
                 <select class="form-select" [(ngModel)]="composerForm.target">
-                  <option value="all">All Users</option>
-                  <option value="bookers">Active Trek Bookers</option>
-                  <option value="admins">Admins & Staff</option>
+                  <ng-container *ngIf="notificationTargetOptions.length > 0; else defaultNotificationTargets">
+                    <option *ngFor="let opt of notificationTargetOptions" [value]="opt.value">{{ opt.label }}</option>
+                  </ng-container>
+                  <ng-template #defaultNotificationTargets>
+                    <option value="all">All Users</option>
+                    <option value="bookers">Active Trek Bookers</option>
+                    <option value="admins">Admins & Staff</option>
+                  </ng-template>
                 </select>
               </label>
             </div>

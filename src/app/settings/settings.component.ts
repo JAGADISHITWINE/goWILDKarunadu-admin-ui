@@ -26,7 +26,7 @@ export class SettingsComponent implements OnInit {
     supportPhoneRaw: '+919876543210',
     whatsappNumber: '+91 98765 43210',
     whatsappNumberRaw: '919876543210',
-    supportEmail: 'info@gowildkarunadu.com',
+    supportEmail: 'info@gowildkarunadu.online',
     contactLocation: 'Bengaluru, Karnataka',
     legalName: 'goWILD Karunadu Eco-Adventures Pvt Ltd',
     gstin: '29AAGCW9123K1Z8',

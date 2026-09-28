@@ -151,6 +151,12 @@ export class ReviewsComponent implements OnInit {
         this.reviewStatusOptions = opts.map((opt) => opt.value) as Array<'pending' | 'approved' | 'rejected'>;
       }
     });
+
+    this.dropdownService.getGroupOptions('pageSizeOptions').pipe(take(1)).subscribe((opts) => {
+      if (opts.length > 0) {
+        this.pageSizeOptions = opts.map(o => Number(o.value || o.label)).filter(n => !isNaN(n));
+      }
+    });
   }
 
   loadReviews() {

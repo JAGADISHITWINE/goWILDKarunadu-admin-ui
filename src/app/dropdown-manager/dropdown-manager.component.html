@@ -1,8 +1,8 @@
-<div class="dropdown-page">
-  <app-admin-shell
-    sectionLabel="Taxonomy & Dynamic Config"
-    title="Dropdown & Lookup Manager"
-    subtitle="Manage dynamic enum lists, lookup taxonomies, status options, and metadata across all user and admin modules.">
+<app-admin-shell
+  sectionLabel="Taxonomy & Dynamic Config"
+  title="Dropdown & Lookup Manager"
+  subtitle="Manage dynamic enum lists, lookup taxonomies, status options, and metadata across all user and admin modules.">
+  <div class="dropdown-page">
 
     <!-- HERO METRICS -->
     <div class="metrics-grid">
@@ -65,51 +65,55 @@
 
     <!-- CONTROLS & FILTER TOOLBAR -->
     <div class="ops-toolbar">
-      <div class="toolbar-left">
-        <div class="search-box">
-          <i class="bi bi-search"></i>
-          <input
-            type="search"
-            [(ngModel)]="searchQuery"
-            placeholder="Search taxonomies, group keys, or modules..." />
-          <button *ngIf="searchQuery" class="clear-btn" (click)="searchQuery = ''"><i class="bi bi-x-circle-fill"></i></button>
+      <div class="toolbar-main-row">
+        <div class="toolbar-left">
+          <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input
+              type="search"
+              name="groupSearchQuery"
+              [(ngModel)]="searchQuery"
+              placeholder="Search taxonomies, group keys, or modules..." />
+            <button *ngIf="searchQuery" class="clear-btn" (click)="searchQuery = ''"><i class="bi bi-x-circle-fill"></i></button>
+          </div>
         </div>
 
-        <div class="page-pills-bar" *ngIf="availablePages.length > 0">
+        <div class="toolbar-right">
+          <div class="status-select-wrap">
+            <select name="statusFilter" [(ngModel)]="statusFilter" class="modern-select-sm">
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+
           <button
+            *ngIf="authService.hasPermission('dropdowns.manage')"
+            class="btn-gradient-primary"
             type="button"
-            class="filter-pill"
-            [class.active]="selectedPageFilter === 'all'"
-            (click)="selectedPageFilter = 'all'">
-            All Modules
-          </button>
-          <button
-            type="button"
-            class="filter-pill"
-            *ngFor="let p of availablePages"
-            [class.active]="selectedPageFilter.toLowerCase() === p.toLowerCase()"
-            (click)="selectedPageFilter = p">
-            {{ p }}
+            (click)="openCreateGroupModal()">
+            <i class="bi bi-plus-lg"></i>
+            <span>New Group</span>
           </button>
         </div>
       </div>
 
-      <div class="toolbar-right">
-        <div class="status-select-wrap">
-          <select [(ngModel)]="statusFilter" class="modern-select-sm">
-            <option value="all">All Statuses</option>
-            <option value="active">Active Only</option>
-            <option value="inactive">Inactive Only</option>
-          </select>
-        </div>
-
+      <div class="page-pills-bar" *ngIf="availablePages.length > 0">
+        <span class="pills-label"><i class="bi bi-funnel"></i> Modules:</span>
         <button
-          *ngIf="authService.hasPermission('dropdowns.manage')"
-          class="btn-gradient-primary"
           type="button"
-          (click)="openCreateGroupModal()">
-          <i class="bi bi-plus-lg"></i>
-          <span>New Group</span>
+          class="filter-pill"
+          [class.active]="selectedPageFilter === 'all'"
+          (click)="selectedPageFilter = 'all'">
+          All Modules
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          *ngFor="let p of availablePages"
+          [class.active]="selectedPageFilter.toLowerCase() === p.toLowerCase()"
+          (click)="selectedPageFilter = p">
+          {{ p }}
         </button>
       </div>
     </div>
@@ -215,23 +219,23 @@
           <div class="schema-grid">
             <div class="form-field">
               <label>Group Identifier Key</label>
-              <input type="text" [(ngModel)]="groupDraft.groupKey" class="modern-input" />
+              <input type="text" name="groupDraftKey" [(ngModel)]="groupDraft.groupKey" class="modern-input" />
             </div>
             <div class="form-field">
               <label>Display Label</label>
-              <input type="text" [(ngModel)]="groupDraft.label" class="modern-input" />
+              <input type="text" name="groupDraftLabel" [(ngModel)]="groupDraft.label" class="modern-input" />
             </div>
             <div class="form-field">
               <label>Target Page / Module</label>
-              <input type="text" [(ngModel)]="groupDraft.page" class="modern-input" />
+              <input type="text" name="groupDraftPage" [(ngModel)]="groupDraft.page" class="modern-input" />
             </div>
             <div class="form-field">
               <label>Sort Order Index</label>
-              <input type="number" min="0" [(ngModel)]="groupDraft.sortOrder" class="modern-input" />
+              <input type="number" min="0" name="groupDraftSort" [(ngModel)]="groupDraft.sortOrder" class="modern-input" />
             </div>
             <div class="form-field">
               <label>Status</label>
-              <select [(ngModel)]="groupDraft.status" class="modern-select">
+              <select name="groupDraftStatus" [(ngModel)]="groupDraft.status" class="modern-select">
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
@@ -278,7 +282,7 @@
 
             <div class="option-search-box">
               <i class="bi bi-search"></i>
-              <input type="search" [(ngModel)]="optionSearchQuery" placeholder="Filter options..." />
+              <input type="search" name="optionSearchQuery" [(ngModel)]="optionSearchQuery" placeholder="Filter options..." />
             </div>
           </div>
 
@@ -292,16 +296,16 @@
             <ng-container *ngIf="editingOptionId !== null; else newOptionComposer">
               <div class="composer-fields">
                 <div class="composer-field flex-2">
-                  <input type="text" [(ngModel)]="optionDraft.label" class="modern-input" placeholder="Display Label (e.g. Challenging)" />
+                  <input type="text" name="optionDraftLabel" [(ngModel)]="optionDraft.label" class="modern-input" placeholder="Display Label (e.g. Challenging)" />
                 </div>
                 <div class="composer-field flex-2">
-                  <input type="text" [(ngModel)]="optionDraft.optionValue" class="modern-input" placeholder="Stored Value (e.g. challenging)" />
+                  <input type="text" name="optionDraftValue" [(ngModel)]="optionDraft.optionValue" class="modern-input" placeholder="Stored Value (e.g. challenging)" />
                 </div>
                 <div class="composer-field flex-1">
-                  <input type="number" [(ngModel)]="optionDraft.sortOrder" class="modern-input" placeholder="Sort #" />
+                  <input type="number" name="optionDraftSort" [(ngModel)]="optionDraft.sortOrder" class="modern-input" placeholder="Sort #" />
                 </div>
                 <div class="composer-field flex-1">
-                  <select [(ngModel)]="optionDraft.status" class="modern-select">
+                  <select name="optionDraftStatus" [(ngModel)]="optionDraft.status" class="modern-select">
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
@@ -318,16 +322,16 @@
             <ng-template #newOptionComposer>
               <div class="composer-fields">
                 <div class="composer-field flex-2">
-                  <input type="text" [(ngModel)]="newOption.label" class="modern-input" placeholder="New Option Label (e.g. Western Ghats)" />
+                  <input type="text" name="newOptionLabel" [(ngModel)]="newOption.label" class="modern-input" placeholder="New Option Label (e.g. Western Ghats)" />
                 </div>
                 <div class="composer-field flex-2">
-                  <input type="text" [(ngModel)]="newOption.optionValue" class="modern-input" placeholder="Stored Value (Optional slug)" />
+                  <input type="text" name="newOptionValue" [(ngModel)]="newOption.optionValue" class="modern-input" placeholder="Stored Value (Optional slug)" />
                 </div>
                 <div class="composer-field flex-1">
-                  <input type="number" [(ngModel)]="newOption.sortOrder" class="modern-input" placeholder="Sort #" />
+                  <input type="number" name="newOptionSort" [(ngModel)]="newOption.sortOrder" class="modern-input" placeholder="Sort #" />
                 </div>
                 <div class="composer-field flex-1">
-                  <select [(ngModel)]="newOption.status" class="modern-select">
+                  <select name="newOptionStatus" [(ngModel)]="newOption.status" class="modern-select">
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
@@ -439,28 +443,28 @@
           <div class="modal-form-grid">
             <div class="form-field full-width">
               <label>Group Identifier Key <span class="req">*</span></label>
-              <input type="text" [(ngModel)]="newGroup.groupKey" placeholder="e.g. trailDifficulty, mealType" class="modern-input" />
+              <input type="text" name="newGroupKey" [(ngModel)]="newGroup.groupKey" placeholder="e.g. trailDifficulty, mealType" class="modern-input" />
               <small class="field-hint">Unique camelCase identifier queried by frontend components.</small>
             </div>
 
             <div class="form-field full-width">
               <label>Display Label <span class="req">*</span></label>
-              <input type="text" [(ngModel)]="newGroup.label" placeholder="e.g. Trail Difficulty Level" class="modern-input" />
+              <input type="text" name="newGroupLabel" [(ngModel)]="newGroup.label" placeholder="e.g. Trail Difficulty Level" class="modern-input" />
             </div>
 
             <div class="form-field">
               <label>Target Module / Page <span class="req">*</span></label>
-              <input type="text" [(ngModel)]="newGroup.page" placeholder="e.g. Treks, Bookings, Operations" class="modern-input" />
+              <input type="text" name="newGroupPage" [(ngModel)]="newGroup.page" placeholder="e.g. Treks, Bookings, Operations" class="modern-input" />
             </div>
 
             <div class="form-field">
               <label>Sort Order</label>
-              <input type="number" min="0" [(ngModel)]="newGroup.sortOrder" class="modern-input" />
+              <input type="number" min="0" name="newGroupSort" [(ngModel)]="newGroup.sortOrder" class="modern-input" />
             </div>
 
             <div class="form-field full-width">
               <label>Initial Status</label>
-              <select [(ngModel)]="newGroup.status" class="modern-select">
+              <select name="newGroupStatus" [(ngModel)]="newGroup.status" class="modern-select">
                 <option value="active">Active (Available across forms)</option>
                 <option value="inactive">Inactive (Draft)</option>
               </select>
@@ -482,5 +486,5 @@
       </div>
     </div>
 
-  </app-admin-shell>
-</div>
+  </div>
+</app-admin-shell>

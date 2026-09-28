@@ -9,6 +9,7 @@ import {
   CategoryPayload,
   CategoryStatus,
 } from './category-manager.service';
+import { DropdownManagerService } from '../dropdown-manager/dropdown-manager.service';
 
 @Component({
   selector: 'app-category-manager',
@@ -96,10 +97,23 @@ export class CategoryManagerComponent implements OnInit {
     sortOrder: 0,
   };
 
-  constructor(private categoryService: CategoryManagerService, public authService: AuthService) { }
+  constructor(
+    private categoryService: CategoryManagerService,
+    private dropdownService: DropdownManagerService,
+    public authService: AuthService
+  ) { }
 
   ngOnInit(): void {
+    this.loadDropdowns();
     this.loadCategories();
+  }
+
+  private loadDropdowns(): void {
+    this.dropdownService.getGroupOptions('pageSizeOptions').subscribe(opts => {
+      if (opts.length > 0) {
+        this.pageSizeOptions = opts.map(o => Number(o.value || o.label)).filter(n => !isNaN(n));
+      }
+    });
   }
 
   get filteredCategories(): Category[] {

@@ -15,6 +15,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AdminShellComponent } from '../shared/admin-shell/admin-shell.component';
 
+import { DropdownManagerService, DropdownOption } from '../dropdown-manager/dropdown-manager.service';
+
 /* ============================
    TYPES
 ============================ */
@@ -236,15 +238,36 @@ export class NotificationsComponent implements OnInit {
      CONSTRUCTOR
   ============================ */
 
+  notificationTypeOptions: DropdownOption[] = [];
+  notificationTargetOptions: DropdownOption[] = [];
+
   private destroyRef = inject(DestroyRef);
 
   constructor(
     private notificationsService: NotificationsService,
+    private dropdownService: DropdownManagerService,
     private router: Router
   ) { }
 
   ngOnInit(): void {
+    this.loadDropdowns();
     this.fetchNotifications();
+  }
+
+  private loadDropdowns(): void {
+    this.dropdownService.getGroupOptions('notificationType').subscribe((opts) => {
+      if (opts.length > 0) this.notificationTypeOptions = opts;
+    });
+
+    this.dropdownService.getGroupOptions('notificationTarget').subscribe((opts) => {
+      if (opts.length > 0) this.notificationTargetOptions = opts;
+    });
+
+    this.dropdownService.getGroupOptions('pageSizeOptions').subscribe((opts) => {
+      if (opts.length > 0) {
+        this.pageSizeOptions = opts.map(o => Number(o.value || o.label)).filter(n => !isNaN(n));
+      }
+    });
   }
 
   /* ============================

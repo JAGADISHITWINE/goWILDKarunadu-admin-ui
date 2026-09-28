@@ -7,6 +7,7 @@ import { TrekList } from './trek-list';
 import { AdminShellComponent } from 'src/app/shared/admin-shell/admin-shell.component';
 import { environment } from 'src/environments/environment';
 import { MediaService } from 'src/app/core/media.service';
+import { DropdownManagerService } from 'src/app/dropdown-manager/dropdown-manager.service';
 
 @Component({
   selector: 'app-trek-list',
@@ -33,12 +34,28 @@ export class TrekListComponent implements OnInit {
     private route: ActivatedRoute,
     private trekService: TrekList,
     public authService: AuthService,
-    private media: MediaService
+    private media: MediaService,
+    private dropdownService: DropdownManagerService
   ) { }
 
   ngOnInit() {
+    this.loadDropdowns();
     this.route.queryParamMap.subscribe(() => {
       this.loadTreks(true);
+    });
+  }
+
+  private loadDropdowns() {
+    this.dropdownService.getGroupOptions('trekCategory').subscribe(opts => {
+      if (opts.length > 0) {
+        this.categories = Array.from(new Set([...this.categories, ...opts.map(o => o.label)])).sort();
+      }
+    });
+
+    this.dropdownService.getGroupOptions('pageSizeOptions').subscribe(opts => {
+      if (opts.length > 0) {
+        this.pageSizeOptions = opts.map(o => Number(o.value || o.label)).filter(n => !isNaN(n));
+      }
     });
   }
 
