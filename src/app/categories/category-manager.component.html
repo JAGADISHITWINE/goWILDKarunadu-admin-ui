@@ -1,0 +1,269 @@
+<div class="category-page">
+  <app-admin-shell
+    sectionLabel="Content & Catalog"
+    title="Category Management"
+    subtitle="Organize, reorder, activate, and manage blog and experience categories across your platform.">
+
+    <!-- METRICS OVERVIEW -->
+    <div class="stats-row">
+      <article class="stat-card">
+        <div class="stat-icon total">
+          <i class="bi bi-folder2-open"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Categories</span>
+          <strong>{{ categories.length }}</strong>
+          <small>System & Custom</small>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon active">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Active</span>
+          <strong>{{ activeCount }}</strong>
+          <small class="text-success">Visible to users</small>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon inactive">
+          <i class="bi bi-pause-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Inactive</span>
+          <strong>{{ inactiveCount }}</strong>
+          <small class="text-muted">Hidden from public</small>
+        </div>
+      </article>
+
+      <article class="stat-card tip-card">
+        <div class="stat-icon tip">
+          <i class="bi bi-lightbulb"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Catalog Tip</span>
+          <strong>Instant Sync</strong>
+          <small>New categories become available immediately in editors and filter bars.</small>
+        </div>
+      </article>
+    </div>
+
+    <!-- MAIN 2-COLUMN LAYOUT -->
+    <div class="layout-grid">
+      <!-- LEFT: CREATE CATEGORY FORM -->
+      <section class="surface-card create-panel">
+        <div class="panel-heading">
+          <div class="heading-text">
+            <span class="eyebrow"><i class="bi bi-plus-circle"></i> New Category</span>
+            <h3>Add Category</h3>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Category Name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="newCategory.name" placeholder="e.g. Wildlife Safari, Trekking Trails" class="app-input" />
+          </div>
+
+          <div class="form-group">
+            <label>Display Sort Order</label>
+            <input type="number" min="0" [(ngModel)]="newCategory.sortOrder" class="app-input" />
+            <small class="field-hint">Lower numbers appear first in navigations.</small>
+          </div>
+
+          <div class="form-group">
+            <label>Initial Status</label>
+            <select [(ngModel)]="newCategory.status" class="app-select">
+              <option value="active">Active (Visible)</option>
+              <option value="inactive">Inactive (Hidden)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app primary" [disabled]="saving" (click)="createCategory()">
+            <i class="bi bi-plus-lg"></i>
+            <span>{{ saving ? 'Saving...' : 'Create Category' }}</span>
+          </button>
+          <button *ngIf="authService.hasPermission('dropdowns.manage')" class="btn-app secondary" type="button" (click)="resetCreateForm()">
+            Reset
+          </button>
+        </div>
+
+        <div class="feedback-msg success" *ngIf="message">
+          <i class="bi bi-check-circle-fill"></i> {{ message }}
+        </div>
+        <div class="feedback-msg error" *ngIf="error">
+          <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+        </div>
+      </section>
+
+      <!-- RIGHT: CATEGORY LIST & ACTIONS -->
+      <section class="surface-card list-panel">
+        <div class="panel-heading list-head">
+          <div class="heading-text">
+            <span class="eyebrow"><i class="bi bi-collection"></i> Inventory</span>
+            <h3>Existing Categories</h3>
+          </div>
+
+          <div class="filters">
+            <div class="search-input-wrap">
+              <i class="bi bi-search"></i>
+              <input type="search" [(ngModel)]="searchQuery" placeholder="Search categories..." />
+            </div>
+            <select [(ngModel)]="statusFilter" class="status-filter-select">
+              <option value="all">All Status</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-wrap" *ngIf="filteredCategories.length > 0">
+          <table class="category-table">
+            <thead>
+              <tr>
+                <th>Category Name</th>
+                <th>URL Slug</th>
+                <th>Order</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let category of paginatedCategories">
+                <td class="name-cell">
+                  <ng-container *ngIf="editingCategoryId !== category.id; else editNameTpl">
+                    <strong>{{ category.name }}</strong>
+                  </ng-container>
+                  <ng-template #editNameTpl>
+                    <input type="text" [(ngModel)]="editDraft.name" class="app-input-sm" />
+                  </ng-template>
+                </td>
+                <td class="slug-cell">
+                  <ng-container *ngIf="editingCategoryId !== category.id; else editSlugTpl">
+                    <code>{{ category.slug }}</code>
+                  </ng-container>
+                  <ng-template #editSlugTpl>
+                    <small class="hint">Auto-updates from name</small>
+                  </ng-template>
+                </td>
+                <td class="order-cell">
+                  <ng-container *ngIf="editingCategoryId !== category.id; else editOrderTpl">
+                    <span class="order-badge">{{ category.sortOrder }}</span>
+                  </ng-container>
+                  <ng-template #editOrderTpl>
+                    <input type="number" min="0" [(ngModel)]="editDraft.sortOrder" class="app-input-sm order-input" />
+                  </ng-template>
+                </td>
+                <td>
+                  <ng-container *ngIf="editingCategoryId !== category.id; else editStatusTpl">
+                    <span class="status-badge" [ngClass]="'status-' + category.status">
+                      <span class="status-dot"></span>
+                      {{ category.status | titlecase }}
+                    </span>
+                  </ng-container>
+                  <ng-template #editStatusTpl>
+                    <select [(ngModel)]="editDraft.status" class="app-select-sm">
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </ng-template>
+                </td>
+                <td class="actions-cell">
+                  <!-- Normal mode actions -->
+                  <div class="action-buttons-wrap" *ngIf="editingCategoryId !== category.id">
+                    <button *ngIf="authService.hasPermission('dropdowns.manage')" 
+                            class="tbl-action-btn edit" 
+                            (click)="startEdit(category)" 
+                            title="Edit Category">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button *ngIf="authService.hasPermission('dropdowns.manage')" 
+                            class="tbl-action-btn toggle" 
+                            [class.active]="category.status === 'active'"
+                            (click)="toggleStatus(category)" 
+                            [title]="category.status === 'active' ? 'Deactivate Category' : 'Activate Category'">
+                      <i class="bi" [ngClass]="category.status === 'active' ? 'bi-pause-circle' : 'bi-play-circle'"></i>
+                    </button>
+                    <button *ngIf="authService.hasPermission('dropdowns.manage')" 
+                            class="tbl-action-btn delete" 
+                            (click)="deleteCategory(category)" 
+                            title="Delete Category">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+
+                  <!-- In-line Edit mode actions -->
+                  <div class="action-buttons-wrap" *ngIf="editingCategoryId === category.id">
+                    <button *ngIf="authService.hasPermission('dropdowns.manage')" 
+                            class="btn-app primary sm" 
+                            (click)="saveEdit(category)">
+                      <i class="bi bi-check-lg"></i> Save
+                    </button>
+                    <button class="btn-app secondary sm" 
+                            (click)="cancelEdit()">
+                      Cancel
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ═══════════ PAGINATION CONTROLS ═══════════ -->
+        <div class="pagination-shell mt-3" *ngIf="filteredCategories.length > 0">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="pagination-info text-muted small">
+              Showing <strong>{{ (currentPage - 1) * pageSize + 1 }}</strong> to
+              <strong>{{ Math.min(currentPage * pageSize, filteredCategories.length) }}</strong> of
+              <strong>{{ filteredCategories.length }}</strong> categories
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <div class="page-size-picker d-flex align-items-center gap-2 me-2">
+                <span class="text-muted small">Per page:</span>
+                <select class="form-select form-select-sm" style="width: 75px;" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+                  <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+                </select>
+              </div>
+
+              <div class="pagination-buttons d-flex align-items-center gap-1">
+                <button class="btn btn-sm btn-outline-secondary" (click)="goToPage(1)" [disabled]="currentPage === 1" title="First Page">
+                  <i class="bi bi-chevron-double-left"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="prevPage()" [disabled]="currentPage === 1" title="Previous Page">
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+                <button
+                  *ngFor="let p of visiblePageNumbers"
+                  class="btn btn-sm"
+                  [ngClass]="p === currentPage ? 'btn-primary' : 'btn-outline-secondary'"
+                  (click)="goToPage(p)">
+                  {{ p }}
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="nextPage()" [disabled]="currentPage === totalPages" title="Next Page">
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages" title="Last Page">
+                  <i class="bi bi-chevron-double-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="filteredCategories.length === 0">
+          <div class="empty-icon"><i class="bi bi-folder-x"></i></div>
+          <h4>No categories found</h4>
+          <p>Try adjusting your search filter or create a new category using the form on the left.</p>
+        </div>
+      </section>
+    </div>
+  </app-admin-shell>
+</div>

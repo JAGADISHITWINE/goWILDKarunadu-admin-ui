@@ -1,0 +1,353 @@
+<div class="coupon-page">
+  <app-admin-shell
+    sectionLabel="Promotions & Discounts"
+    title="Trek Coupon Manager"
+    subtitle="Configure discount rules, promotional codes, redemption limits, and track redemption analytics.">
+
+    <!-- METRICS OVERVIEW -->
+    <div class="stats-row">
+      <article class="stat-card">
+        <div class="stat-icon total">
+          <i class="bi bi-ticket-perforated"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Coupons</span>
+          <strong>{{ stats.total }}</strong>
+          <small>Created across platform</small>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon active">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Active & Valid</span>
+          <strong>{{ stats.active }}</strong>
+          <small class="text-success">Available for booking</small>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon global">
+          <i class="bi bi-globe2"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Global Promos</span>
+          <strong>{{ stats.global }}</strong>
+          <small>Applies to all treks</small>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon redemptions">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Redemptions</span>
+          <strong>{{ stats.redemptions }}</strong>
+          <small>Successful checkouts</small>
+        </div>
+      </article>
+    </div>
+
+    <!-- FORM CARD -->
+    <section class="surface-card coupon-form-card">
+      <div class="form-header">
+        <div class="fh-left">
+          <span class="badge-tag"><i class="bi bi-percent"></i> {{ editingCouponId ? 'Edit Mode' : 'New Promo' }}</span>
+          <h3>{{ editingCouponId ? 'Modify Coupon Settings' : 'Create New Promotional Code' }}</h3>
+        </div>
+        <button *ngIf="editingCouponId" class="btn-app secondary sm" type="button" (click)="clearForm()">
+          <i class="bi bi-plus-lg"></i> Create New Instead
+        </button>
+      </div>
+
+      <div class="form-grid">
+        <!-- SCOPE -->
+        <div class="form-group">
+          <label>Target Trek Scope</label>
+          <select class="app-select" [(ngModel)]="form.trekId">
+            <option [ngValue]="null">🌍 All Treks (Global Promo Code)</option>
+            <option *ngFor="let trek of treks" [ngValue]="trek.id">{{ trek.name }}</option>
+          </select>
+        </div>
+
+        <!-- CODE -->
+        <div class="form-group">
+          <label>Coupon Code <span class="req">*</span></label>
+          <input class="app-input code-input" type="text" [(ngModel)]="form.code" placeholder="e.g. MONSOON20, EARLYBIRD" />
+        </div>
+
+        <!-- DISCOUNT TYPE -->
+        <div class="form-group">
+          <label>Discount Type <span class="req">*</span></label>
+          <select class="app-select" [(ngModel)]="form.discountType">
+            <option value="percentage">Percentage Discount (%)</option>
+            <option value="flat">Flat Amount (₹)</option>
+          </select>
+        </div>
+
+        <!-- VALUE -->
+        <div class="form-group">
+          <label>Discount Value <span class="req">*</span></label>
+          <input class="app-input" type="number" [(ngModel)]="form.discountValue" min="1" [placeholder]="form.discountType === 'percentage' ? 'e.g. 15%' : 'e.g. 500'" />
+        </div>
+
+        <!-- MIN BOOKING -->
+        <div class="form-group">
+          <label>Min Booking Amount (₹)</label>
+          <input class="app-input" type="number" [(ngModel)]="form.minBookingAmount" min="0" placeholder="0 = No minimum" />
+        </div>
+
+        <!-- MAX DISCOUNT -->
+        <div class="form-group">
+          <label>Max Cap Discount (₹)</label>
+          <input class="app-input" type="number" [(ngModel)]="form.maxDiscountAmount" min="0" placeholder="Optional cap" />
+        </div>
+
+        <!-- START DATE -->
+        <div class="form-group">
+          <label>Start Date & Time</label>
+          <input class="app-input" type="datetime-local" [(ngModel)]="form.startDate" />
+        </div>
+
+        <!-- END DATE -->
+        <div class="form-group">
+          <label>Expiry Date & Time</label>
+          <input class="app-input" type="datetime-local" [(ngModel)]="form.endDate" />
+        </div>
+
+        <!-- USAGE LIMIT -->
+        <div class="form-group">
+          <label>Total Usage Limit</label>
+          <input class="app-input" type="number" [(ngModel)]="form.usageLimit" min="0" placeholder="Leave empty for unlimited" />
+        </div>
+
+        <!-- ACTIVE STATUS -->
+        <div class="form-group">
+          <label>Status</label>
+          <select class="app-select" [(ngModel)]="form.isActive">
+            <option [ngValue]="true">Active (Usable)</option>
+            <option [ngValue]="false">Inactive (Disabled)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button *ngIf="authService.hasPermission('treks.manage')" class="btn-app primary" (click)="saveCoupon()" [disabled]="saving">
+          <i class="bi bi-check2-circle"></i>
+          <span>{{ saving ? 'Saving...' : (editingCouponId ? 'Update Coupon' : 'Create Coupon') }}</span>
+        </button>
+        <button *ngIf="authService.hasPermission('treks.manage')" class="btn-app secondary" type="button" (click)="clearForm()">
+          Clear Form
+        </button>
+
+        <div class="feedback-badge success" *ngIf="message">
+          <i class="bi bi-check-circle-fill"></i> {{ message }}
+        </div>
+        <div class="feedback-badge error" *ngIf="error">
+          <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+        </div>
+      </div>
+    </section>
+
+    <!-- LIST SECTION -->
+    <section class="surface-card coupon-list-card">
+      <div class="list-head">
+        <div class="lh-title">
+          <h3>Active & Historical Coupons</h3>
+          <span class="count-pill">{{ filteredCoupons.length }} coupon(s)</span>
+        </div>
+
+        <div class="filters">
+          <div class="search-input-wrap">
+            <i class="bi bi-search"></i>
+            <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFilter()" placeholder="Search by code or trek..." />
+          </div>
+
+          <select class="app-select filter-select" [(ngModel)]="filterTrekId" (ngModelChange)="applyFilter()">
+            <option [ngValue]="null">All Treks</option>
+            <option *ngFor="let trek of treks" [ngValue]="trek.id">{{ trek.name }}</option>
+          </select>
+
+          <button *ngIf="searchQuery || filterTrekId" class="btn-app ghost sm" type="button" (click)="resetFilters()">
+            <i class="bi bi-arrow-counterclockwise"></i>
+            <span>Reset</span>
+          </button>
+
+          <button class="btn-app secondary sm" type="button" (click)="loadCoupons()" [disabled]="loading">
+            <i class="bi bi-arrow-clockwise"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="coupon-table">
+          <thead>
+            <tr>
+              <th>Coupon Code</th>
+              <th>Applicable Scope</th>
+              <th>Type</th>
+              <th>Discount</th>
+              <th>Redemptions</th>
+              <th>Validity Window</th>
+              <th>Status</th>
+              <th class="text-end" *ngIf="authService.hasPermission('treks.manage')">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let c of paginatedCoupons">
+              <tr [class.selected-row]="selectedUsageCoupon?.id === c.id">
+                <td class="code-cell">
+                  <div class="code-wrapper">
+                    <span class="code-badge">{{ c.code }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span *ngIf="!c.trekId" class="badge-global"><i class="bi bi-globe2 me-1"></i>Global</span>
+                  <span *ngIf="c.trekId" class="trek-target-name">{{ c.trekName }}</span>
+                </td>
+                <td class="type-cell">
+                  <span class="type-tag">{{ c.discountType | titlecase }}</span>
+                </td>
+                <td class="discount-cell">
+                  <strong>{{ formatDiscount(c) }}</strong>
+                  <small *ngIf="c.maxDiscountAmount" class="max-cap">Max ₹{{ c.maxDiscountAmount }}</small>
+                </td>
+                <td>
+                  <button class="usage-btn" type="button" (click)="toggleUsageLog(c)" title="View detailed redemptions">
+                    <i class="bi bi-bar-chart-line-fill"></i> {{ c.usageCount }} / {{ c.usageLimit ?? '∞' }}
+                  </button>
+                </td>
+                <td class="expiry-cell">
+                  <div class="date-range-box">
+                    <span>{{ formatDateShort(c.startDate) }}</span>
+                    <i class="bi bi-arrow-right"></i>
+                    <span>{{ formatDateShort(c.endDate) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="coupon-status-pill" [ngClass]="'cpill-' + getCouponStatus(c)">
+                    <span class="status-dot"></span>
+                    {{ getCouponStatus(c) | titlecase }}
+                  </span>
+                </td>
+                <td class="actions-cell" *ngIf="authService.hasPermission('treks.manage')">
+                  <div class="action-buttons-wrap">
+                    <button class="tbl-action-btn edit" type="button" (click)="editCoupon(c)" title="Edit Coupon">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="tbl-action-btn delete" type="button" (click)="removeCoupon(c)" title="Delete Coupon">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Usage Log Sub-panel -->
+              <tr *ngIf="selectedUsageCoupon?.id === c.id" class="usage-detail-row">
+                <td colspan="8">
+                  <div class="usage-panel">
+                    <div class="usage-panel-head">
+                      <h4><i class="bi bi-receipt"></i> Redemption Log for Coupon <code>{{ c.code }}</code></h4>
+                      <span class="usage-badge">{{ usageLogs.length }} redemption(s)</span>
+                    </div>
+
+                    <div *ngIf="loadingUsage" class="usage-loading">
+                      <ion-spinner name="crescent"></ion-spinner> Loading redemptions...
+                    </div>
+
+                    <div *ngIf="!loadingUsage && usageLogs.length === 0" class="usage-empty">
+                      <i class="bi bi-info-circle"></i> No bookings have redeemed this coupon code yet.
+                    </div>
+
+                    <div class="usage-subtable-wrap" *ngIf="!loadingUsage && usageLogs.length > 0">
+                      <table class="usage-subtable">
+                        <thead>
+                          <tr>
+                            <th>Booking Ref</th>
+                            <th>Customer</th>
+                            <th>Email</th>
+                            <th>Trek</th>
+                            <th>Discounted Amount</th>
+                            <th>Redeemed Date</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let log of usageLogs">
+                            <td><code>#{{ log.bookingReference || log.id }}</code></td>
+                            <td><strong>{{ log.customerName }}</strong></td>
+                            <td class="text-muted">{{ log.customerEmail }}</td>
+                            <td>{{ log.trekName }}</td>
+                            <td class="fw-bold text-accent">₹{{ log.amount }}</td>
+                            <td>{{ formatDateShort(log.usedAt) }}</td>
+                            <td><span class="status-pill-mini status-completed">{{ log.status }}</span></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+
+            <tr *ngIf="!loading && filteredCoupons.length === 0">
+              <td [attr.colspan]="authService.hasPermission('treks.manage') ? 8 : 7" class="empty-row">
+                <div class="empty-state-box">
+                  <i class="bi bi-ticket-detailed"></i>
+                  <h4>No Coupons Found</h4>
+                  <p>No coupons match your filter criteria. Create a new promotion above.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ═══════════ PAGINATION CONTROLS ═══════════ -->
+      <div class="pagination-shell" *ngIf="filteredCoupons.length > 0">
+        <div class="pagination-inner">
+          <div class="pagination-info">
+            Showing <strong>{{ (currentPage - 1) * Number(pageSize) + 1 }}</strong> to
+            <strong>{{ Math.min(currentPage * Number(pageSize), filteredCoupons.length) }}</strong> of
+            <strong>{{ filteredCoupons.length }}</strong> coupons
+          </div>
+
+          <div class="pagination-controls">
+            <div class="page-size-selector">
+              <label>Per page:</label>
+              <select class="pagination-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+                <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+              </select>
+            </div>
+
+            <div class="page-actions">
+              <button class="page-nav-btn" type="button" (click)="prevPage()" [disabled]="currentPage === 1" title="Previous Page">
+                <i class="bi bi-chevron-left"></i> <span>Prev</span>
+              </button>
+
+              <ng-container *ngFor="let p of visiblePageNumbers">
+                <span class="page-ellipsis" *ngIf="p === '...'">…</span>
+                <button
+                  class="page-btn"
+                  type="button"
+                  *ngIf="p !== '...'"
+                  [class.active]="p === currentPage"
+                  (click)="goToPage(p)">
+                  {{ p }}
+                </button>
+              </ng-container>
+
+              <button class="page-nav-btn" type="button" (click)="nextPage()" [disabled]="currentPage === totalPages" title="Next Page">
+                <span>Next</span> <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </app-admin-shell>
+</div>

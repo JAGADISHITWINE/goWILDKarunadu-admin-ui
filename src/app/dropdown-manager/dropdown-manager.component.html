@@ -1,0 +1,486 @@
+<div class="dropdown-page">
+  <app-admin-shell
+    sectionLabel="Taxonomy & Dynamic Config"
+    title="Dropdown & Lookup Manager"
+    subtitle="Manage dynamic enum lists, lookup taxonomies, status options, and metadata across all user and admin modules.">
+
+    <!-- HERO METRICS -->
+    <div class="metrics-grid">
+      <div class="metric-card metric-primary">
+        <div class="metric-icon-wrap">
+          <i class="bi bi-diagram-3-fill"></i>
+        </div>
+        <div class="metric-content">
+          <span class="metric-label">Dropdown Groups</span>
+          <div class="metric-val">{{ groups.length }}</div>
+          <span class="metric-sub">Configured schema sets</span>
+        </div>
+      </div>
+
+      <div class="metric-card metric-success">
+        <div class="metric-icon-wrap">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <div class="metric-content">
+          <span class="metric-label">Active Taxonomies</span>
+          <div class="metric-val">{{ activeGroupCount }}</div>
+          <span class="metric-sub text-success">Live in user & admin views</span>
+        </div>
+      </div>
+
+      <div class="metric-card metric-warning" *ngIf="inactiveGroupCount > 0">
+        <div class="metric-icon-wrap">
+          <i class="bi bi-pause-circle"></i>
+        </div>
+        <div class="metric-content">
+          <span class="metric-label">Inactive Groups</span>
+          <div class="metric-val">{{ inactiveGroupCount }}</div>
+          <span class="metric-sub text-muted">Temporarily hidden</span>
+        </div>
+      </div>
+
+      <div class="metric-card metric-accent">
+        <div class="metric-icon-wrap">
+          <i class="bi bi-collection-fill"></i>
+        </div>
+        <div class="metric-content">
+          <span class="metric-label">Total Dynamic Values</span>
+          <div class="metric-val">{{ totalOptions }}</div>
+          <span class="metric-sub">Database-driven options</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATION BANNERS -->
+    <div class="toast-banner success" *ngIf="message">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>{{ message }}</span>
+      <button type="button" class="toast-close" (click)="message = ''"><i class="bi bi-x"></i></button>
+    </div>
+    <div class="toast-banner error" *ngIf="error">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ error }}</span>
+      <button type="button" class="toast-close" (click)="error = ''"><i class="bi bi-x"></i></button>
+    </div>
+
+    <!-- CONTROLS & FILTER TOOLBAR -->
+    <div class="ops-toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input
+            type="search"
+            [(ngModel)]="searchQuery"
+            placeholder="Search taxonomies, group keys, or modules..." />
+          <button *ngIf="searchQuery" class="clear-btn" (click)="searchQuery = ''"><i class="bi bi-x-circle-fill"></i></button>
+        </div>
+
+        <div class="page-pills-bar" *ngIf="availablePages.length > 0">
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedPageFilter === 'all'"
+            (click)="selectedPageFilter = 'all'">
+            All Modules
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            *ngFor="let p of availablePages"
+            [class.active]="selectedPageFilter.toLowerCase() === p.toLowerCase()"
+            (click)="selectedPageFilter = p">
+            {{ p }}
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <div class="status-select-wrap">
+          <select [(ngModel)]="statusFilter" class="modern-select-sm">
+            <option value="all">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+        </div>
+
+        <button
+          *ngIf="authService.hasPermission('dropdowns.manage')"
+          class="btn-gradient-primary"
+          type="button"
+          (click)="openCreateGroupModal()">
+          <i class="bi bi-plus-lg"></i>
+          <span>New Group</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN WORKSPACE -->
+    <div class="manager-workspace">
+      <!-- LEFT MASTER COLUMN: GROUPS LIST -->
+      <aside class="groups-sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">
+            <i class="bi bi-list-nested"></i>
+            Taxonomy Groups ({{ filteredGroups.length }})
+          </span>
+          <button *ngIf="searchQuery || selectedPageFilter !== 'all' || statusFilter !== 'all'" class="btn-text-sm" (click)="resetFilters(); selectedPageFilter = 'all'">
+            Reset
+          </button>
+        </div>
+
+        <div class="groups-scroll-list">
+          <div
+            *ngFor="let group of filteredGroups"
+            class="group-card"
+            [class.active]="group.id === selectedGroupId"
+            (click)="selectGroup(group.id)">
+            <div class="group-card-indicator"></div>
+            <div class="group-card-avatar">
+              {{ (group.label || 'G').charAt(0).toUpperCase() }}
+            </div>
+            <div class="group-card-body">
+              <div class="group-card-title-row">
+                <span class="group-label">{{ group.label }}</span>
+                <span class="badge-status" [ngClass]="'badge-' + group.status">{{ group.status }}</span>
+              </div>
+              <div class="group-card-meta">
+                <code class="group-key-pill">{{ group.groupKey }}</code>
+                <span class="page-chip"><i class="bi bi-window"></i> {{ group.page }}</span>
+                <span class="options-count">{{ group.options.length }} items</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-list-card" *ngIf="filteredGroups.length === 0">
+            <i class="bi bi-folder-x"></i>
+            <p>No matching dropdown groups</p>
+            <button class="btn-app ghost btn-sm" (click)="resetFilters(); selectedPageFilter = 'all'">Clear Filters</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT DETAIL COLUMN: GROUP & OPTIONS MANAGER -->
+      <main class="group-detail-panel" *ngIf="selectedGroup as group; else noGroupSelected">
+        <!-- GROUP DETAIL HERO BANNER -->
+        <div class="group-hero-card">
+          <div class="hero-main">
+            <div class="hero-tags">
+              <span class="badge-status-lg" [ngClass]="'badge-' + group.status">
+                <span class="pulse-dot"></span>
+                {{ group.status | uppercase }}
+              </span>
+              <span class="module-badge">
+                <i class="bi bi-grid-fill"></i> Module: <strong>{{ group.page }}</strong>
+              </span>
+              <span class="sort-badge">
+                <i class="bi bi-sort-numeric-down"></i> Sort Order: {{ group.sortOrder }}
+              </span>
+            </div>
+            <h2 class="hero-title">{{ group.label }}</h2>
+            <div class="hero-key-row">
+              <span class="key-label">API Key:</span>
+              <code class="key-code">{{ group.groupKey }}</code>
+              <button
+                type="button"
+                class="btn-copy-key"
+                (click)="copyGroupKey(group.groupKey)"
+                [title]="copiedKey ? 'Copied!' : 'Copy Key'">
+                <i class="bi" [ngClass]="copiedKey ? 'bi-check-all text-success' : 'bi-clipboard'"></i>
+                <span>{{ copiedKey ? 'Copied!' : 'Copy' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-actions" *ngIf="authService.hasPermission('dropdowns.manage')">
+            <button class="btn-action-ghost" type="button" (click)="toggleEditorCollapse()">
+              <i class="bi" [ngClass]="editorCollapsed ? 'bi-chevron-down' : 'bi-sliders'"></i>
+              <span>{{ editorCollapsed ? 'Edit Schema' : 'Hide Schema' }}</span>
+            </button>
+            <button class="btn-action-ghost" type="button" (click)="toggleGroupStatus()">
+              <i class="bi" [ngClass]="group.status === 'active' ? 'bi-pause-circle-fill text-warning' : 'bi-play-circle-fill text-success'"></i>
+              <span>{{ group.status === 'active' ? 'Deactivate' : 'Activate' }}</span>
+            </button>
+            <button class="btn-action-danger" type="button" (click)="deleteGroup()">
+              <i class="bi bi-trash3-fill"></i>
+              <span>Delete</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- COLLAPSIBLE GROUP SCHEMA SETTINGS -->
+        <div class="schema-editor-card" *ngIf="!editorCollapsed">
+          <div class="schema-header">
+            <h4><i class="bi bi-sliders2"></i> Edit Group Properties</h4>
+          </div>
+          <div class="schema-grid">
+            <div class="form-field">
+              <label>Group Identifier Key</label>
+              <input type="text" [(ngModel)]="groupDraft.groupKey" class="modern-input" />
+            </div>
+            <div class="form-field">
+              <label>Display Label</label>
+              <input type="text" [(ngModel)]="groupDraft.label" class="modern-input" />
+            </div>
+            <div class="form-field">
+              <label>Target Page / Module</label>
+              <input type="text" [(ngModel)]="groupDraft.page" class="modern-input" />
+            </div>
+            <div class="form-field">
+              <label>Sort Order Index</label>
+              <input type="number" min="0" [(ngModel)]="groupDraft.sortOrder" class="modern-input" />
+            </div>
+            <div class="form-field">
+              <label>Status</label>
+              <select [(ngModel)]="groupDraft.status" class="modern-select">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="schema-actions" *ngIf="authService.hasPermission('dropdowns.manage')">
+            <button class="btn-gradient-primary btn-sm" [disabled]="saving" (click)="saveGroup()">
+              <i class="bi bi-check2"></i> Save Changes
+            </button>
+            <button class="btn-action-ghost btn-sm" (click)="syncGroupDraft()">Reset</button>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE LIVE PREVIEW SANDBOX -->
+        <div class="preview-sandbox-card">
+          <div class="sandbox-title">
+            <i class="bi bi-eye-fill"></i>
+            <span>Live Dropdown Preview</span>
+            <small class="text-muted">(How this dropdown renders in application forms)</small>
+          </div>
+          <div class="sandbox-select-wrap">
+            <select class="sandbox-select">
+              <option value="" disabled selected>-- Select {{ group.label }} ({{ group.options.length }} options) --</option>
+              <option *ngFor="let opt of group.options" [value]="opt.value" [disabled]="opt.status === 'inactive'">
+                {{ opt.label }} {{ opt.status === 'inactive' ? '(Inactive)' : '' }}
+              </option>
+            </select>
+            <i class="bi bi-chevron-down select-chevron"></i>
+          </div>
+        </div>
+
+        <!-- OPTIONS MANAGEMENT SECTION -->
+        <div class="options-container-card">
+          <!-- SECTION HEADER & INLINE ADD COMPOSER -->
+          <div class="options-section-head">
+            <div class="section-title-wrap">
+              <h3>
+                <i class="bi bi-list-check"></i>
+                Configured Values
+                <span class="count-pill">{{ filteredOptions.length }}</span>
+              </h3>
+              <p class="section-desc">Add, edit, reorder or toggle status for individual lookup items.</p>
+            </div>
+
+            <div class="option-search-box">
+              <i class="bi bi-search"></i>
+              <input type="search" [(ngModel)]="optionSearchQuery" placeholder="Filter options..." />
+            </div>
+          </div>
+
+          <!-- FAST INLINE ADD / EDIT BAR -->
+          <div class="fast-composer-bar" *ngIf="authService.hasPermission('dropdowns.manage')">
+            <div class="composer-title-tag">
+              <i class="bi" [ngClass]="editingOptionId ? 'bi-pencil-fill text-warning' : 'bi-plus-circle-fill text-success'"></i>
+              <span>{{ editingOptionId ? 'Edit Selected Value' : 'Add New Value' }}</span>
+            </div>
+
+            <ng-container *ngIf="editingOptionId !== null; else newOptionComposer">
+              <div class="composer-fields">
+                <div class="composer-field flex-2">
+                  <input type="text" [(ngModel)]="optionDraft.label" class="modern-input" placeholder="Display Label (e.g. Challenging)" />
+                </div>
+                <div class="composer-field flex-2">
+                  <input type="text" [(ngModel)]="optionDraft.optionValue" class="modern-input" placeholder="Stored Value (e.g. challenging)" />
+                </div>
+                <div class="composer-field flex-1">
+                  <input type="number" [(ngModel)]="optionDraft.sortOrder" class="modern-input" placeholder="Sort #" />
+                </div>
+                <div class="composer-field flex-1">
+                  <select [(ngModel)]="optionDraft.status" class="modern-select">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                <div class="composer-btn-group">
+                  <button class="btn-gradient-primary btn-sm" [disabled]="saving" (click)="saveOption()">
+                    <i class="bi bi-check-lg"></i> Update
+                  </button>
+                  <button class="btn-action-ghost btn-sm" (click)="cancelOptionEdit()">Cancel</button>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-template #newOptionComposer>
+              <div class="composer-fields">
+                <div class="composer-field flex-2">
+                  <input type="text" [(ngModel)]="newOption.label" class="modern-input" placeholder="New Option Label (e.g. Western Ghats)" />
+                </div>
+                <div class="composer-field flex-2">
+                  <input type="text" [(ngModel)]="newOption.optionValue" class="modern-input" placeholder="Stored Value (Optional slug)" />
+                </div>
+                <div class="composer-field flex-1">
+                  <input type="number" [(ngModel)]="newOption.sortOrder" class="modern-input" placeholder="Sort #" />
+                </div>
+                <div class="composer-field flex-1">
+                  <select [(ngModel)]="newOption.status" class="modern-select">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                <div class="composer-btn-group">
+                  <button class="btn-gradient-primary btn-sm" [disabled]="saving || !newOption.label" (click)="createOption()">
+                    <i class="bi bi-plus-lg"></i> Add Value
+                  </button>
+                </div>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- VALUES DATA TABLE -->
+          <div class="table-responsive-wrapper" *ngIf="filteredOptions.length > 0; else emptyOptionsTpl">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">Sort</th>
+                  <th>Option Label</th>
+                  <th>Raw / Stored Value</th>
+                  <th style="width: 120px;">Status</th>
+                  <th style="width: 140px;" class="text-end" *ngIf="authService.hasPermission('dropdowns.manage')">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let opt of filteredOptions" [class.row-editing]="editingOptionId === opt.id" [class.row-inactive]="opt.status === 'inactive'">
+                  <td>
+                    <span class="rank-badge">#{{ opt.sortOrder }}</span>
+                  </td>
+                  <td>
+                    <strong class="option-label-text">{{ opt.label }}</strong>
+                  </td>
+                  <td>
+                    <code class="option-value-code">{{ opt.value || opt.label }}</code>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="status-toggle-btn"
+                      [ngClass]="'status-' + opt.status"
+                      [disabled]="!authService.hasPermission('dropdowns.manage') || saving"
+                      (click)="toggleOptionStatus(opt)"
+                      [title]="'Click to toggle ' + (opt.status === 'active' ? 'Inactive' : 'Active')">
+                      <span class="status-indicator"></span>
+                      {{ opt.status | uppercase }}
+                    </button>
+                  </td>
+                  <td class="text-end" *ngIf="authService.hasPermission('dropdowns.manage')">
+                    <div class="action-buttons-cell">
+                      <button
+                        type="button"
+                        class="btn-row-action edit"
+                        (click)="startEditOption(opt)"
+                        title="Edit Option">
+                        <i class="bi bi-pencil-fill"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-row-action delete"
+                        (click)="deleteOption(opt)"
+                        title="Delete Option">
+                        <i class="bi bi-trash3-fill"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <ng-template #emptyOptionsTpl>
+            <div class="empty-state-box">
+              <div class="empty-state-icon">
+                <i class="bi bi-tags"></i>
+              </div>
+              <h4>No Options Found</h4>
+              <p *ngIf="optionSearchQuery">No options matching "{{ optionSearchQuery }}"</p>
+              <p *ngIf="!optionSearchQuery">This dropdown group does not have any options yet. Add one above.</p>
+            </div>
+          </ng-template>
+        </div>
+      </main>
+
+      <ng-template #noGroupSelected>
+        <div class="no-selection-card">
+          <i class="bi bi-hand-index-thumb"></i>
+          <h3>Select a Dropdown Group</h3>
+          <p>Choose any taxonomy group from the left sidebar to manage its dynamic values and configuration.</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- CREATE GROUP MODAL -->
+    <div class="modal-backdrop-custom" *ngIf="showCreateGroupModal">
+      <div class="modal-dialog-custom">
+        <div class="modal-header-custom">
+          <div class="modal-title-wrap">
+            <div class="modal-avatar"><i class="bi bi-folder-plus"></i></div>
+            <div>
+              <h3>Create New Dropdown Group</h3>
+              <p>Add a new taxonomy schema for dynamic selection lists</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-custom" (click)="closeCreateGroupModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <div class="modal-body-custom">
+          <div class="modal-form-grid">
+            <div class="form-field full-width">
+              <label>Group Identifier Key <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="newGroup.groupKey" placeholder="e.g. trailDifficulty, mealType" class="modern-input" />
+              <small class="field-hint">Unique camelCase identifier queried by frontend components.</small>
+            </div>
+
+            <div class="form-field full-width">
+              <label>Display Label <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="newGroup.label" placeholder="e.g. Trail Difficulty Level" class="modern-input" />
+            </div>
+
+            <div class="form-field">
+              <label>Target Module / Page <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="newGroup.page" placeholder="e.g. Treks, Bookings, Operations" class="modern-input" />
+            </div>
+
+            <div class="form-field">
+              <label>Sort Order</label>
+              <input type="number" min="0" [(ngModel)]="newGroup.sortOrder" class="modern-input" />
+            </div>
+
+            <div class="form-field full-width">
+              <label>Initial Status</label>
+              <select [(ngModel)]="newGroup.status" class="modern-select">
+                <option value="active">Active (Available across forms)</option>
+                <option value="inactive">Inactive (Draft)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-custom">
+          <button type="button" class="btn-action-ghost" (click)="closeCreateGroupModal()">Cancel</button>
+          <button
+            type="button"
+            class="btn-gradient-primary"
+            [disabled]="saving || !newGroup.groupKey || !newGroup.label || !newGroup.page"
+            (click)="createGroup()">
+            <i class="bi bi-check2"></i>
+            <span>{{ saving ? 'Creating...' : 'Create Taxonomy Group' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </app-admin-shell>
+</div>

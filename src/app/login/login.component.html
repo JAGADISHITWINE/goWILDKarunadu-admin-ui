@@ -1,0 +1,163 @@
+<div class="auth-page">
+  <div class="auth-layout">
+    <!-- ══════════════════════════════════════════════════
+         LEFT BRAND & EXPEDITION SHOWCASE HERO (LUXURY EMERALD)
+         ══════════════════════════════════════════════════ -->
+    <section class="brand-hero-section">
+      <div class="hero-ambient-glow glow-top"></div>
+      <div class="hero-ambient-glow glow-bottom"></div>
+
+      <div class="hero-inner-flow">
+        <!-- Logo & Header -->
+        <div class="brand-badge-row">
+          <div class="brand-logo-frame">
+            <img
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              src="/assets/assets/logo.png"
+              alt="goWILD™ Karunadu"
+              class="brand-logo-img"
+            />
+          </div>
+          <div class="brand-title-meta">
+            <div class="brand-words">
+              <span class="word-go">go</span>
+              <span class="word-wild">WILD<span class="tm">™</span></span>
+            </div>
+            <span class="brand-kannada">ಕರುನಾಡು &bull; WILDERNESS COMMAND</span>
+          </div>
+        </div>
+
+        <!-- Headline & Value Prop -->
+        <div class="hero-text-block">
+          <div class="live-pill">
+            <span class="live-dot"></span>
+            OPERATIONS CONSOLE v2.4
+          </div>
+          <h1 class="hero-headline">
+            Expedition Command &amp; <br />
+            <span class="highlight-text">Basecamp Operations</span>
+          </h1>
+          <p class="hero-summary">
+            Centralized platform for Western Ghats eco-treks, automated Forest Department permits, real-time telemetry, and batch manifests.
+          </p>
+        </div>
+
+        <!-- Capability Cards -->
+        <div class="hero-features-list">
+          <div class="feature-card">
+            <div class="feat-icon-box"><i class="bi bi-shield-check"></i></div>
+            <div class="feat-info">
+              <strong>Eco-Permit Compliance</strong>
+              <span>Automated forest pass clearances &amp; ID verification</span>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feat-icon-box"><i class="bi bi-qr-code-scan"></i></div>
+            <div class="feat-info">
+              <strong>Basecamp QR Check-in</strong>
+              <span>Real-time digital manifests &amp; guest arrivals</span>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feat-icon-box"><i class="bi bi-broadcast"></i></div>
+            <div class="feat-info">
+              <strong>Trail Safety Telemetry</strong>
+              <span>Weather advisories &amp; automated WhatsApp alerts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Footer -->
+        <div class="hero-security-note">
+          <i class="bi bi-lock-fill"></i>
+          <span>256-Bit TLS Encrypted &bull; Role-Based Access Control</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         RIGHT AUTHENTICATION FORM (CRISP HIGH-CONTRAST CARD)
+         ══════════════════════════════════════════════════ -->
+    <section class="auth-form-section">
+      <div class="login-card">
+        <div class="login-card-header">
+          <span class="login-portal-tag">ADMIN CONSOLE</span>
+          <h2 class="login-title">Sign in to your account</h2>
+          <p class="login-subtitle">Enter your corporate credentials to access the management portal.</p>
+        </div>
+
+        <form [formGroup]="credentials" (ngSubmit)="login()" class="login-form">
+          <!-- Email Input -->
+          <div class="form-field">
+            <label class="field-label" for="admin-email">Corporate Email</label>
+            <div class="input-wrapper" [class.has-error]="credentials.get('email')?.touched && credentials.get('email')?.invalid">
+              <i class="bi bi-envelope field-icon"></i>
+              <input
+                id="admin-email"
+                type="email"
+                class="form-input"
+                placeholder="admin@gowildkarunadu.online"
+                formControlName="email"
+                autocomplete="email"
+              />
+            </div>
+            <span class="field-validation-msg" *ngIf="credentials.get('email')?.touched && credentials.get('email')?.invalid">
+              Please enter a valid corporate email.
+            </span>
+          </div>
+
+          <!-- Password Input -->
+          <div class="form-field">
+            <label class="field-label" for="admin-password">Password</label>
+            <div class="input-wrapper" [class.has-error]="credentials.get('password')?.touched && credentials.get('password')?.invalid">
+              <i class="bi bi-shield-lock field-icon"></i>
+              <input
+                id="admin-password"
+                [type]="showPassword ? 'text' : 'password'"
+                class="form-input"
+                placeholder="Enter password"
+                formControlName="password"
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="btn-toggle-pw"
+                (click)="togglePassword()"
+                title="Toggle password view">
+                <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+              </button>
+            </div>
+            <span class="field-validation-msg" *ngIf="credentials.get('password')?.touched && credentials.get('password')?.invalid">
+              Password is required.
+            </span>
+          </div>
+
+          <!-- Error Message Banner -->
+          <div class="login-error-alert" *ngIf="loginError">
+            <i class="bi bi-exclamation-octagon-fill"></i>
+            <span>{{ loginError }}</span>
+          </div>
+
+          <!-- Submit Action Button -->
+          <button
+            type="submit"
+            class="btn-login-submit"
+            [disabled]="isSubmitting || credentials.invalid">
+            <span *ngIf="!isSubmitting">Authenticate &amp; Enter Console</span>
+            <span *ngIf="isSubmitting">Verifying credentials...</span>
+            <i class="bi" [ngClass]="isSubmitting ? 'bi-arrow-repeat spin' : 'bi-arrow-right'"></i>
+          </button>
+        </form>
+
+        <div class="login-card-footer">
+          <p>&copy; 2026 goWILD™ Karunadu. All rights reserved.</p>
+          <small>Restricted portal. Unauthorized access is strictly logged &amp; monitored.</small>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

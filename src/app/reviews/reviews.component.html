@@ -1,0 +1,307 @@
+<div class="reviews-page">
+  <app-admin-shell
+    sectionLabel="Reviews"
+    title="Customer Reviews & Ratings"
+    subtitle="Moderate trekker feedback, manage public reviews, and publish verified admin responses.">
+
+    <!-- ═══════════ SUMMARY METRIC CARDS ═══════════ -->
+    <div class="reviews-summary" *ngIf="!loading">
+      <div class="summary-card">
+        <div class="summary-icon tone-primary">
+          <i class="bi bi-chat-square-quote-fill"></i>
+        </div>
+        <div class="summary-copy">
+          <h3>{{ totalCount }}</h3>
+          <p>Total Reviews</p>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon tone-success">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="summary-copy">
+          <h3>{{ approvedCount }}</h3>
+          <p>Approved &amp; Live</p>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon tone-warning">
+          <i class="bi bi-clock-history"></i>
+        </div>
+        <div class="summary-copy">
+          <h3>{{ pendingCount }}</h3>
+          <p>Pending Moderation</p>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon tone-secondary">
+          <i class="bi bi-star-fill"></i>
+        </div>
+        <div class="summary-copy">
+          <h3>{{ averageRating }} ★</h3>
+          <p>Average Rating</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skeletons -->
+    <div class="reviews-summary" *ngIf="loading">
+      <div class="summary-card skeleton-card" *ngFor="let i of [1,2,3,4]">
+        <div class="skeleton-icon shimmer"></div>
+        <div class="summary-copy">
+          <div class="skeleton-line lg shimmer mb-1"></div>
+          <div class="skeleton-line sm shimmer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ SEARCH & FILTER TOOLBAR ═══════════ -->
+    <div class="reviews-toolbar-card">
+      <div class="toolbar-left">
+        <div class="search-input-wrap">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search by customer name, trek, or review comment..." />
+          <button
+            type="button"
+            class="clear-btn"
+            *ngIf="searchQuery"
+            (click)="searchQuery = ''; onFilterChange()"
+            title="Clear search">
+            <i class="bi bi-x-circle-fill"></i>
+          </button>
+        </div>
+
+        <div class="status-chips">
+          <button
+            type="button"
+            class="status-chip"
+            [class.active]="selectedStatus === 'all'"
+            (click)="selectedStatus = 'all'; onFilterChange()">
+            All ({{ reviews.length }})
+          </button>
+          <button
+            type="button"
+            class="status-chip"
+            [class.active]="selectedStatus === 'approved'"
+            (click)="selectedStatus = 'approved'; onFilterChange()">
+            Approved ({{ approvedCount }})
+          </button>
+          <button
+            type="button"
+            class="status-chip"
+            [class.active]="selectedStatus === 'pending'"
+            (click)="selectedStatus = 'pending'; onFilterChange()">
+            Pending ({{ pendingCount }})
+          </button>
+          <button
+            type="button"
+            class="status-chip"
+            [class.active]="selectedStatus === 'rejected'"
+            (click)="selectedStatus = 'rejected'; onFilterChange()">
+            Rejected ({{ rejectedCount }})
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <button class="btn-app ghost btn-sm" type="button" (click)="toggleSelectAll()">
+          <i class="bi" [ngClass]="allVisibleSelected ? 'bi-check-square-fill text-accent' : 'bi-square'"></i>
+          <span>{{ allVisibleSelected ? 'Deselect All' : 'Select All' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ BULK ACTION BAR ═══════════ -->
+    <div class="bulk-bar" *ngIf="selectedCount > 0">
+      <span class="bulk-label"><i class="bi bi-check2-square me-1"></i>{{ selectedCount }} selected</span>
+      <div class="bulk-btn-group">
+        <button class="btn-app primary btn-sm" type="button" (click)="bulkApprove()">
+          <i class="bi bi-check2-circle"></i> Approve Selected
+        </button>
+        <button class="btn-app danger btn-sm" type="button" (click)="bulkReject()">
+          <i class="bi bi-x-circle"></i> Reject Selected
+        </button>
+        <button class="btn-app ghost btn-sm" type="button" (click)="clearSelection()">Clear</button>
+      </div>
+    </div>
+
+    <!-- ═══════════ LOADING SKELETON (CARDS) ═══════════ -->
+    <div class="reviews-grid" *ngIf="loading">
+      <div class="review-card skeleton-card" *ngFor="let i of [1,2,3,4,5,6]">
+        <div class="review-top">
+          <div class="skeleton-avatar shimmer"></div>
+          <div style="flex:1">
+            <div class="skeleton-line md shimmer mb-2"></div>
+            <div class="skeleton-line sm shimmer"></div>
+          </div>
+        </div>
+        <div class="skeleton-line lg shimmer mt-2"></div>
+        <div class="skeleton-line md shimmer mt-1"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ EMPTY STATE ═══════════ -->
+    <div class="empty-state surface-card" *ngIf="!loading && filteredReviews.length === 0">
+      <div class="empty-icon">
+        <i class="bi bi-chat-square-quote"></i>
+      </div>
+      <h3>No Reviews Found</h3>
+      <p>No customer reviews match your search or filter criteria.</p>
+      <button class="btn-app ghost" type="button" (click)="resetFilters()">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+      </button>
+    </div>
+
+    <!-- ═══════════ REVIEWS GRID ═══════════ -->
+    <div class="reviews-grid" *ngIf="!loading && filteredReviews.length > 0">
+      <div
+        class="review-card"
+        *ngFor="let review of paginatedReviews"
+        [class.review-selected]="selectedReviewIds.has(review.id)">
+
+        <!-- Selection Checkbox -->
+        <label class="review-select-check" title="Select for bulk moderation">
+          <input
+            type="checkbox"
+            [checked]="selectedReviewIds.has(review.id)"
+            (change)="toggleReviewSelection(review.id)" />
+        </label>
+
+        <!-- Top Row: Avatar + Name + Stars -->
+        <div class="review-top">
+          <div class="customer-info">
+            <img loading="lazy" decoding="async" [src]="review.avatar" [alt]="review.customerName" class="avatar" />
+            <div class="customer-meta">
+              <h4 class="customer-name">{{ review.customerName }}</h4>
+              <p class="trek-name"><i class="bi bi-compass me-1"></i>{{ review.trekName }}</p>
+              <!-- Star Rating -->
+              <div class="star-row">
+                <i
+                  *ngFor="let filled of getStarArray(review.likes)"
+                  class="bi star-icon"
+                  [ngClass]="filled ? 'bi-star-fill star-filled' : 'bi-star star-empty'">
+                </i>
+                <span class="star-count">{{ review.likes }}/5</span>
+              </div>
+            </div>
+          </div>
+          <span class="status-pill" [ngClass]="'status-' + review.status">
+            {{ review.status | titlecase }}
+          </span>
+        </div>
+
+        <!-- Comment Body -->
+        <p class="comment-text">{{ review.comment }}</p>
+
+        <!-- Existing Admin Reply -->
+        <div class="admin-reply-box" *ngIf="review.adminReply">
+          <div class="reply-head">
+            <span><i class="bi bi-shield-check text-accent"></i> <strong>Admin Response</strong></span>
+            <span class="reply-date">{{ review.repliedAt }}</span>
+            <button
+              class="reply-del-btn"
+              *ngIf="authService.hasPermission('reviews.manage')"
+              (click)="deleteReply(review)"
+              title="Delete reply">&times;</button>
+          </div>
+          <p class="reply-content">{{ review.adminReply }}</p>
+        </div>
+
+        <!-- Inline Reply Input Box -->
+        <div class="reply-input-panel" *ngIf="replyingReviewId === review.id">
+          <textarea
+            class="reply-textarea"
+            rows="2"
+            [(ngModel)]="replyText"
+            placeholder="Write an official response to this guest review...">
+          </textarea>
+          <div class="reply-actions">
+            <button class="btn-app ghost btn-xs" type="button" (click)="toggleReply(review.id)">Cancel</button>
+            <button class="btn-app primary btn-xs" type="button" (click)="submitReply(review)" [disabled]="!replyText.trim()">
+              <i class="bi bi-send"></i> Send Reply
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="review-footer">
+          <span class="date">
+            <i class="bi bi-calendar-event"></i>
+            {{ review.date | date:'dd MMM yyyy' }}
+          </span>
+
+          <div class="footer-actions">
+            <button
+              class="reply-trigger-btn"
+              *ngIf="authService.hasPermission('reviews.manage')"
+              (click)="toggleReply(review.id)">
+              <i class="bi bi-reply"></i>
+              {{ review.adminReply ? 'Edit Reply' : 'Reply' }}
+            </button>
+
+            <!-- Pending status quick actions -->
+            <div class="quick-mod-buttons" *ngIf="review.status === 'pending' && authService.hasPermission('reviews.manage')">
+              <button class="icon-btn-pill success" (click)="updateReviewStatus(review, 'approved')" title="Approve review">
+                <i class="bi bi-check-lg"></i>
+              </button>
+              <button class="icon-btn-pill danger" (click)="updateReviewStatus(review, 'rejected')" title="Reject review">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGINATION CONTROLS ═══════════ -->
+    <div class="pagination-shell" *ngIf="!loading && filteredReviews.length > 0">
+      <div class="pagination-inner">
+        <div class="pagination-info">
+          Showing <strong>{{ (currentPage - 1) * Number(pageSize) + 1 }}</strong> to
+          <strong>{{ Math.min(currentPage * Number(pageSize), filteredReviews.length) }}</strong> of
+          <strong>{{ filteredReviews.length }}</strong> reviews
+        </div>
+
+        <div class="pagination-controls">
+          <div class="page-size-selector">
+            <label>Per page:</label>
+            <select class="pagination-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+              <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+            </select>
+          </div>
+
+          <div class="page-actions">
+            <button class="page-nav-btn" type="button" (click)="prevPage()" [disabled]="currentPage === 1" title="Previous Page">
+              <i class="bi bi-chevron-left"></i> <span>Prev</span>
+            </button>
+
+            <ng-container *ngFor="let p of visiblePageNumbers">
+              <span class="page-ellipsis" *ngIf="p === '...'">…</span>
+              <button
+                class="page-btn"
+                type="button"
+                *ngIf="p !== '...'"
+                [class.active]="p === currentPage"
+                (click)="goToPage(p)">
+                {{ p }}
+              </button>
+            </ng-container>
+
+            <button class="page-nav-btn" type="button" (click)="nextPage()" [disabled]="currentPage === totalPages" title="Next Page">
+              <span>Next</span> <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </app-admin-shell>
+</div>

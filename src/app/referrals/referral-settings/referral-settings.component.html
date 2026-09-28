@@ -1,0 +1,162 @@
+<div class="referral-page">
+  <app-admin-shell
+    sectionLabel="Growth & Loyalty"
+    title="Referral Program Settings"
+    subtitle="Configure reward amounts, participant milestones, and free trek benefits for community ambassadors.">
+
+    <div class="referral-container">
+      <!-- HEADER STATUS BAR -->
+      <div class="header-status-card surface-card">
+        <div class="status-left">
+          <div class="status-pill" [ngClass]="statusClass">
+            <span class="dot"></span>
+            {{ statusLabel }}
+          </div>
+          <span class="program-hint">
+            {{ form.get('isEnabled')?.value ? 'Ambassadors can generate and share active referral promo codes.' : 'Referral code redemptions are temporarily paused.' }}
+          </span>
+        </div>
+        <div class="status-right">
+          <small class="meta"><i class="bi bi-clock-history me-1"></i>{{ lastUpdatedLabel }}</small>
+        </div>
+      </div>
+
+      <!-- METRICS STATS GRID -->
+      <section *ngIf="!loading" class="stat-grid">
+        <article class="stat-card" *ngFor="let card of statCards" [ngClass]="card.accent">
+          <div class="card-icon-wrap">
+            <i class="bi" [ngClass]="{
+              'bi-cash-coin': card.accent === 'primary',
+              'bi-gift': card.accent === 'accent',
+              'bi-trophy': card.accent === 'warning',
+              'bi-toggle2-on': !card.accent
+            }"></i>
+          </div>
+          <div class="card-content">
+            <p class="label">{{ card.label }}</p>
+            <h3 class="value">{{ card.value }}</h3>
+            <p class="helper" *ngIf="card.helper">{{ card.helper }}</p>
+          </div>
+        </article>
+      </section>
+
+      <!-- LOADING STATE -->
+      <div class="loading-state surface-card" *ngIf="loading">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading referral program parameters…</p>
+      </div>
+
+      <!-- MAIN CONFIGURATION FORM -->
+      <form class="surface-card settings-form" [formGroup]="form" (ngSubmit)="saveSettings()" novalidate>
+        <div class="form-section-title">
+          <i class="bi bi-sliders"></i>
+          <h3>Discount Rules & Milestones</h3>
+        </div>
+
+        <div class="form-grid-3">
+          <!-- BASE DISCOUNT -->
+          <div class="form-group">
+            <label>
+              <span>Base Referral Reward (₹) <span class="req">*</span></span>
+              <div class="input-with-icon">
+                <span class="currency-symbol">₹</span>
+                <input type="number" formControlName="baseDiscount" min="0" step="50" class="app-input" />
+              </div>
+            </label>
+            <span class="field-error" *ngIf="getFieldError('baseDiscount')">
+              <i class="bi bi-exclamation-circle"></i> {{ getFieldError('baseDiscount') }}
+            </span>
+            <p class="field-hint">Credited for every approved referral booking.</p>
+          </div>
+
+          <!-- BONUS DISCOUNT -->
+          <div class="form-group">
+            <label>
+              <span>Milestone Bonus Reward (₹) <span class="req">*</span></span>
+              <div class="input-with-icon">
+                <span class="currency-symbol">₹</span>
+                <input type="number" formControlName="bonusDiscount" min="0" step="50" class="app-input" />
+              </div>
+            </label>
+            <span class="field-error" *ngIf="getFieldError('bonusDiscount')">
+              <i class="bi bi-exclamation-circle"></i> {{ getFieldError('bonusDiscount') }}
+            </span>
+            <p class="field-hint">Unlocked when the friend group size threshold is met.</p>
+          </div>
+
+          <!-- BONUS PARTICIPANT THRESHOLD -->
+          <div class="form-group">
+            <label>
+              <span>Group Size Threshold <span class="req">*</span></span>
+              <input type="number" formControlName="bonusParticipantThreshold" min="1" step="1" class="app-input" />
+            </label>
+            <span class="field-error" *ngIf="getFieldError('bonusParticipantThreshold')">
+              <i class="bi bi-exclamation-circle"></i> {{ getFieldError('bonusParticipantThreshold') }}
+            </span>
+            <p class="field-hint">Friends needed in a single booking to unlock bonus discount.</p>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="form-section-title">
+          <i class="bi bi-award"></i>
+          <h3>Free Trek Slot Rewards</h3>
+        </div>
+
+        <div class="form-grid-3">
+          <!-- FREE SLOT THRESHOLD -->
+          <div class="form-group">
+            <label>
+              <span>Referrals Threshold for Free Trek <span class="req">*</span></span>
+              <input type="number" formControlName="freeSlotThreshold" min="1" step="1" class="app-input" />
+            </label>
+            <span class="field-error" *ngIf="getFieldError('freeSlotThreshold')">
+              <i class="bi bi-exclamation-circle"></i> {{ getFieldError('freeSlotThreshold') }}
+            </span>
+            <p class="field-hint">Completed bookings required before unlocking a free trek seat.</p>
+          </div>
+
+          <!-- FREE SLOTS AWARDED -->
+          <div class="form-group">
+            <label>
+              <span>Free Slots Awarded <span class="req">*</span></span>
+              <input type="number" formControlName="freeSlotValue" min="1" step="1" class="app-input" />
+            </label>
+            <span class="field-error" *ngIf="getFieldError('freeSlotValue')">
+              <i class="bi bi-exclamation-circle"></i> {{ getFieldError('freeSlotValue') }}
+            </span>
+            <p class="field-hint">Number of free trek passes granted at each threshold milestone.</p>
+          </div>
+
+          <!-- PROGRAM TOGGLE SWITCH -->
+          <div class="form-group switch-group">
+            <label class="toggle-control">
+              <input type="checkbox" formControlName="isEnabled" />
+              <span class="toggle-switch"></span>
+              <span class="toggle-text">Active Referral Program</span>
+            </label>
+            <p class="field-hint">Disable to temporarily pause code validation and payouts.</p>
+          </div>
+        </div>
+
+        <div class="form-actions-bar">
+          <button type="button" class="btn-app secondary" (click)="loadSettings()" [disabled]="loading || saving">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset
+          </button>
+          <button type="submit" class="btn-app primary" [disabled]="saving">
+            <i class="bi bi-check2-circle"></i>
+            <span>{{ saving ? 'Saving…' : 'Save Program Rules' }}</span>
+          </button>
+        </div>
+
+        <div class="feedback-badge success" *ngIf="message">
+          <i class="bi bi-check-circle-fill"></i> {{ message }}
+        </div>
+        <div class="feedback-badge error" *ngIf="error && !form.invalid">
+          <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+        </div>
+      </form>
+    </div>
+  </app-admin-shell>
+</div>

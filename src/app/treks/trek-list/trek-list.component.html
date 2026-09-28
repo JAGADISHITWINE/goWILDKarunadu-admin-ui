@@ -1,0 +1,355 @@
+<div class="treks-page">
+  <app-admin-shell
+    sectionLabel="Treks"
+    title="Trek Expeditions"
+    subtitle="Browse expeditions, manage active departure batches, and configure trek packages.">
+
+    <!-- ═══════════ STATS SUMMARY ═══════════ -->
+    <div class="trek-summary" *ngIf="!isLoading">
+      <div class="summary-card">
+        <div class="summary-icon tone-primary">
+          <i class="bi bi-map-fill"></i>
+        </div>
+        <div class="summary-copy">
+          <h3>{{ treks.length }}</h3>
+          <p>Total Treks</p>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon tone-success">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="summary-copy">
+          <h3>{{ activeTreksCount }}</h3>
+          <p>Active Treks</p>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon tone-warning">
+          <i class="bi bi-file-earmark-text-fill"></i>
+        </div>
+        <div class="summary-copy">
+          <h3>{{ draftTreksCount }}</h3>
+          <p>Draft Treks</p>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon tone-secondary">
+          <i class="bi bi-calendar-range-fill"></i>
+        </div>
+        <div class="summary-copy">
+          <h3>{{ activeCount }}</h3>
+          <p>Active Batches</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skeleton Summary -->
+    <div class="trek-summary" *ngIf="isLoading">
+      <div class="summary-card skeleton-card" *ngFor="let i of [1,2,3,4]">
+        <div class="skeleton-icon shimmer"></div>
+        <div class="skeleton-copy">
+          <div class="skeleton-line lg shimmer"></div>
+          <div class="skeleton-line sm shimmer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ TOOLBAR & FILTERS ═══════════ -->
+    <div class="trek-toolbar-card">
+      <div class="toolbar-left">
+        <div class="search-input-wrap">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search by trek name, location, difficulty, category..." />
+          <button
+            type="button"
+            class="clear-btn"
+            *ngIf="searchQuery"
+            (click)="searchQuery = ''; onFilterChange()"
+            title="Clear search">
+            <i class="bi bi-x-circle-fill"></i>
+          </button>
+        </div>
+
+        <div class="filter-select" *ngIf="categories.length > 0">
+          <select [(ngModel)]="selectedCategory" (ngModelChange)="onFilterChange()" aria-label="Filter by category">
+            <option value="all">All Categories</option>
+            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+          </select>
+          <i class="bi bi-chevron-down select-arrow"></i>
+        </div>
+
+        <div class="status-chips">
+          <button
+            type="button"
+            class="status-chip"
+            [class.active]="selectedStatus === 'all'"
+            (click)="selectedStatus = 'all'; onFilterChange()">
+            All
+          </button>
+          <button
+            type="button"
+            class="status-chip"
+            [class.active]="selectedStatus === 'active'"
+            (click)="selectedStatus = 'active'; onFilterChange()">
+            Active
+          </button>
+          <button
+            type="button"
+            class="status-chip"
+            [class.active]="selectedStatus === 'draft'"
+            (click)="selectedStatus = 'draft'; onFilterChange()">
+            Draft
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <div class="view-toggle">
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="viewMode === 'grid'"
+            (click)="viewMode = 'grid'"
+            title="Grid view">
+            <i class="bi bi-grid-fill"></i>
+          </button>
+          <button
+            type="button"
+            class="toggle-btn"
+            [class.active]="viewMode === 'table'"
+            (click)="viewMode = 'table'"
+            title="Table view">
+            <i class="bi bi-list-ul"></i>
+          </button>
+        </div>
+
+        <button
+          *ngIf="authService.hasPermission('treks.manage')"
+          class="btn-app primary"
+          (click)="goToAddTrek()"
+          type="button">
+          <i class="bi bi-plus-circle"></i>
+          <span>Add Trek</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ LOADING SKELETON (GRID) ═══════════ -->
+    <div class="trek-grid" *ngIf="isLoading && viewMode === 'grid'">
+      <div class="trek-card skeleton-card" *ngFor="let i of [1,2,3,4,5,6]">
+        <div class="skeleton-cover shimmer"></div>
+        <div class="trek-body">
+          <div class="skeleton-line lg shimmer"></div>
+          <div class="skeleton-line md shimmer"></div>
+          <div class="skeleton-line sm shimmer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ EMPTY STATE ═══════════ -->
+    <div *ngIf="!isLoading && visibleTreks.length === 0" class="empty-state surface-card">
+      <div class="empty-icon">
+        <i class="bi bi-compass"></i>
+      </div>
+      <h3>No Treks Found</h3>
+      <p>No trek expeditions match your current search or filter criteria.</p>
+      <button class="btn-app ghost" type="button" (click)="resetFilters()">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+      </button>
+    </div>
+
+    <!-- ═══════════ GRID VIEW ═══════════ -->
+    <div class="trek-grid" *ngIf="!isLoading && viewMode === 'grid' && visibleTreks.length > 0">
+      <div
+        class="trek-card"
+        *ngFor="let trek of visibleTreks"
+        (click)="editTrek(trek.id)">
+        <div class="trek-cover">
+          <img
+            loading="lazy"
+            decoding="async"
+            [src]="resolveImageUrl(trek.cover_image, trek.updated_at || trek.created_at)"
+            [alt]="trek.name" />
+          <span
+            class="status-pill"
+            [ngClass]="'status-' + getStatusColor(trek.status)">
+            {{ (trek.status || 'draft') | uppercase }}
+          </span>
+          <span class="difficulty-tag" *ngIf="trek.difficulty">
+            {{ trek.difficulty }}
+          </span>
+        </div>
+
+        <div class="trek-body">
+          <div class="trek-top">
+            <h4 class="trek-title">{{ trek.name }}</h4>
+            <div class="card-actions" (click)="$event.stopPropagation()">
+              <button
+                *ngIf="authService.hasPermission('treks.manage')"
+                class="icon-btn subtle"
+                (click)="editTrek(trek.id, $event)"
+                title="Edit trek settings">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+          </div>
+
+          <p class="trek-location" *ngIf="trek.location">
+            <i class="bi bi-geo-alt-fill text-accent"></i> {{ trek.location }}
+          </p>
+
+          <div class="batch-count-bar">
+            <span class="count-badge active">
+              <span class="dot dot-success"></span>
+              {{ getBatchStatusCount(trek, 'active') }} Active batches
+            </span>
+            <span class="count-badge inactive" *ngIf="getBatchStatusCount(trek, 'inactive') > 0">
+              {{ getBatchStatusCount(trek, 'inactive') }} Inactive
+            </span>
+          </div>
+
+          <div class="batch-pills" *ngIf="getVisibleBatches(trek).length > 0">
+            <button
+              type="button"
+              class="batch-chip"
+              *ngFor="let batch of getVisibleBatches(trek)"
+              (click)="$event.stopPropagation(); viewTrek(batch.id)"
+              title="View batch details">
+              <span class="batch-status-dot" [ngClass]="getBatchStatusLabel(batch)"></span>
+              <span class="batch-date">{{ batch.startDate | date: 'dd MMM yyyy' }}</span>
+              <span class="batch-meta">· ⏱ {{ batch.duration }} · ₹{{ batch.price | number:'1.0-0' }}</span>
+            </button>
+          </div>
+
+          <div class="batch-pills-empty" *ngIf="getVisibleBatches(trek).length === 0">
+            <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>No upcoming departure batches</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ TABLE VIEW ═══════════ -->
+    <div class="table-shell" *ngIf="!isLoading && viewMode === 'table' && visibleTreks.length > 0">
+      <div class="table-wrap">
+        <table class="trek-table">
+          <thead>
+            <tr>
+              <th style="width: 70px;">Cover</th>
+              <th>Trek Expedition</th>
+              <th>Location</th>
+              <th>Category</th>
+              <th>Difficulty</th>
+              <th>Batches</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let trek of visibleTreks"
+              class="clickable-row"
+              (click)="editTrek(trek.id)">
+              <td>
+                <div class="table-thumb">
+                  <img
+                    loading="lazy"
+                    [src]="resolveImageUrl(trek.cover_image, trek.updated_at || trek.created_at)"
+                    [alt]="trek.name" />
+                </div>
+              </td>
+              <td>
+                <div class="cell-stack">
+                  <strong class="trek-title">{{ trek.name }}</strong>
+                  <span class="text-muted small mono">#{{ trek.id }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="text-muted small"><i class="bi bi-geo-alt me-1"></i>{{ trek.location || '—' }}</span>
+              </td>
+              <td>
+                <span class="category-tag">{{ trek.category || trek.collection || 'General' }}</span>
+              </td>
+              <td>
+                <span class="difficulty-badge" [ngClass]="(trek.difficulty || 'Moderate').toLowerCase()">
+                  {{ trek.difficulty || 'Moderate' }}
+                </span>
+              </td>
+              <td>
+                <span class="batch-indicator">
+                  <strong>{{ getBatchStatusCount(trek, 'active') }}</strong> active
+                </span>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="'status-' + getStatusColor(trek.status)">
+                  {{ (trek.status || 'draft') | uppercase }}
+                </span>
+              </td>
+              <td class="text-end" (click)="$event.stopPropagation()">
+                <div class="d-flex justify-content-end gap-1">
+                  <button
+                    *ngIf="authService.hasPermission('treks.manage')"
+                    class="icon-btn subtle"
+                    (click)="editTrek(trek.id, $event)"
+                    title="Edit trek">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGINATION CONTROLS ═══════════ -->
+    <div class="pagination-shell" *ngIf="!isLoading && filteredTreks.length > 0">
+      <div class="pagination-inner">
+        <div class="pagination-info">
+          Showing <strong>{{ (currentPage - 1) * Number(pageSize) + 1 }}</strong> to
+          <strong>{{ Math.min(currentPage * Number(pageSize), filteredTreks.length) }}</strong> of
+          <strong>{{ filteredTreks.length }}</strong> expeditions
+        </div>
+
+        <div class="pagination-controls">
+          <div class="page-size-selector">
+            <label>Per page:</label>
+            <select class="pagination-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+              <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+            </select>
+          </div>
+
+          <div class="page-actions">
+            <button class="page-nav-btn" type="button" (click)="prevPage()" [disabled]="currentPage === 1" title="Previous Page">
+              <i class="bi bi-chevron-left"></i> <span>Prev</span>
+            </button>
+
+            <ng-container *ngFor="let p of visiblePageNumbers">
+              <span class="page-ellipsis" *ngIf="p === '...'">…</span>
+              <button
+                class="page-btn"
+                type="button"
+                *ngIf="p !== '...'"
+                [class.active]="p === currentPage"
+                (click)="goToPage(p)">
+                {{ p }}
+              </button>
+            </ng-container>
+
+            <button class="page-nav-btn" type="button" (click)="nextPage()" [disabled]="currentPage === totalPages" title="Next Page">
+              <span>Next</span> <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </app-admin-shell>
+</div>

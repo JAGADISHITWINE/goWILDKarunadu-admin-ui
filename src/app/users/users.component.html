@@ -1,0 +1,593 @@
+<div class="users-page">
+  <app-admin-shell
+    sectionLabel="Users"
+    title="Manage Users"
+    subtitle="Monitor user accounts, customer profiles, booking history, and CRM notes from one place.">
+
+    <!-- ================= LIST VIEW ================= -->
+    <div *ngIf="!isDetailView">
+
+      <!-- ═══════════ SUMMARY STRIP ═══════════ -->
+      <div class="summary-strip" *ngIf="!isLoading">
+        <div class="summary-card">
+          <div class="summary-icon tone-primary">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="summary-copy">
+            <h3>{{ totalUsersCount }}</h3>
+            <p>Total Registered</p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon tone-success">
+            <i class="bi bi-person-check-fill"></i>
+          </div>
+          <div class="summary-copy">
+            <h3>{{ activeUsersCount }}</h3>
+            <p>Active Users</p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon tone-danger">
+            <i class="bi bi-person-x-fill"></i>
+          </div>
+          <div class="summary-copy">
+            <h3>{{ blockedUsersCount }}</h3>
+            <p>Blocked Users</p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-icon tone-warning">
+            <i class="bi bi-person-dash-fill"></i>
+          </div>
+          <div class="summary-copy">
+            <h3>{{ pendingUsersCount }}</h3>
+            <p>Pending / Inactive</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skeleton Summary -->
+      <div class="summary-strip" *ngIf="isLoading">
+        <div class="summary-card skeleton-card" *ngFor="let i of [1,2,3,4]">
+          <div class="skeleton-icon shimmer"></div>
+          <div class="summary-copy">
+            <div class="skeleton-line lg shimmer mb-1"></div>
+            <div class="skeleton-line sm shimmer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ SEARCH & FILTERS BAR ═══════════ -->
+      <div class="users-toolbar-card">
+        <div class="toolbar-left">
+          <div class="search-input-wrap">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="onFilterChange()"
+              placeholder="Search by user name, email, or phone number..." />
+            <button
+              type="button"
+              class="clear-btn"
+              *ngIf="searchQuery"
+              (click)="searchQuery = ''; onFilterChange()"
+              title="Clear search">
+              <i class="bi bi-x-circle-fill"></i>
+            </button>
+          </div>
+
+          <button
+            class="btn-app ghost btn-sm filter-toggle-btn"
+            type="button"
+            (click)="toggleFilter()"
+            [class.active]="showFilterPanel">
+            <i class="bi bi-sliders"></i>
+            <span>Filters</span>
+            <span class="active-dot" *ngIf="selectedStatus !== 'all' || joinFrom || joinTo"></span>
+          </button>
+        </div>
+
+        <div class="toolbar-right">
+          <div class="view-toggle">
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="viewMode === 'grid'"
+              (click)="viewMode = 'grid'"
+              title="Grid view">
+              <i class="bi bi-grid-fill"></i>
+            </button>
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.active]="viewMode === 'table'"
+              (click)="viewMode = 'table'"
+              title="Table view">
+              <i class="bi bi-list-ul"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Filter Panel -->
+      <div class="filter-panel" [class.open]="showFilterPanel">
+        <div class="filter-panel-inner">
+          <div class="fp-group">
+            <label for="userStatusFilter">Account Status</label>
+            <div class="select-wrapper">
+              <select id="userStatusFilter" [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
+                <option *ngFor="let opt of statusOptions" [value]="opt.value">{{ opt.label }}</option>
+              </select>
+              <i class="bi bi-chevron-down select-arrow"></i>
+            </div>
+          </div>
+          <div class="fp-group">
+            <label>Joined From</label>
+            <input type="date" [(ngModel)]="joinFrom" (ngModelChange)="onFilterChange()" />
+          </div>
+          <div class="fp-group">
+            <label>Joined To</label>
+            <input type="date" [(ngModel)]="joinTo" (ngModelChange)="onFilterChange()" />
+          </div>
+          <div class="fp-actions">
+            <button class="btn-app ghost btn-sm" type="button" (click)="resetFilters()">
+              <i class="bi bi-arrow-counterclockwise"></i> Reset
+            </button>
+            <span class="fp-count">{{ filteredUsers.length }} result{{ filteredUsers.length !== 1 ? 's' : '' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ SKELETON CARDS LOADING ═══════════ -->
+      <div class="users-grid" *ngIf="isLoading && viewMode === 'grid'">
+        <div class="user-card skeleton-card" *ngFor="let i of [1,2,3,4,5,6]">
+          <div class="card-top">
+            <div class="skeleton-avatar shimmer"></div>
+            <div class="u-info" style="flex:1">
+              <div class="skeleton-line lg shimmer mb-1"></div>
+              <div class="skeleton-line sm shimmer"></div>
+            </div>
+          </div>
+          <div class="card-rule"></div>
+          <div class="card-stats">
+            <div class="skeleton-line sm shimmer"></div>
+            <div class="skeleton-line sm shimmer"></div>
+            <div class="skeleton-line sm shimmer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ EMPTY STATE ═══════════ -->
+      <div class="empty-state surface-card" *ngIf="!isLoading && filteredUsers.length === 0">
+        <div class="empty-icon">
+          <i class="bi bi-people"></i>
+        </div>
+        <h3>No Users Found</h3>
+        <p>No user accounts match your search or filter criteria.</p>
+        <button class="btn-app ghost" type="button" (click)="resetFilters()">
+          <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+        </button>
+      </div>
+
+      <!-- ═══════════ USER CARDS GRID ═══════════ -->
+      <div class="users-grid" *ngIf="!isLoading && viewMode === 'grid' && filteredUsers.length > 0">
+        <div class="user-card" *ngFor="let user of paginatedUsers">
+          <!-- Card Top -->
+          <div class="card-top">
+            <div class="u-avatar-wrap">
+              <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.name" class="u-avatar-img" />
+              <div *ngIf="!user.avatar" class="u-avatar-initials" [style.background]="getAvatarColor(user.name)">
+                {{ getInitials(user.name) }}
+              </div>
+              <span class="status-dot-indicator" [ngClass]="user.status"></span>
+            </div>
+            <div class="u-info">
+              <h3 class="u-name">{{ user.name }}</h3>
+              <p class="u-email">{{ user.email }}</p>
+              <p class="u-phone" *ngIf="user.phone && user.phone !== '-'"><i class="bi bi-telephone me-1"></i>{{ user.phone }}</p>
+            </div>
+            <span class="status-pill" [ngClass]="'status-' + getStatusColor(user.status)">
+              {{ user.status | titlecase }}
+            </span>
+          </div>
+
+          <!-- Divider -->
+          <div class="card-rule"></div>
+
+          <!-- Stats Row -->
+          <div class="card-stats">
+            <div class="cs">
+              <span class="cs-val">{{ user.totalBookings }}</span>
+              <span class="cs-lbl">Bookings</span>
+            </div>
+            <div class="cs-sep"></div>
+            <div class="cs">
+              <span class="cs-val green">₹{{ user.totalSpent | number:'1.0-0' }}</span>
+              <span class="cs-lbl">Total Spent</span>
+            </div>
+            <div class="cs-sep"></div>
+            <div class="cs">
+              <span class="cs-val sm">{{ user.joinDate | date:'MMM yyyy' }}</span>
+              <span class="cs-lbl">Joined</span>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="card-rule"></div>
+
+          <!-- Actions -->
+          <div class="card-actions">
+            <button class="ca-btn outline text-dark" (click)="viewUser(user.id)" title="View profile and bookings">
+              <i class="bi bi-eye"></i> View
+            </button>
+            <button class="ca-btn wa-btn" (click)="openWhatsApp(user, $event)" title="Direct WhatsApp message">
+              <i class="bi bi-whatsapp"></i> WhatsApp
+            </button>
+            <button class="ca-btn crm-btn" (click)="openCrmDrawer(user, $event)" title="Internal Ops & CRM Notes">
+              <i class="bi bi-journal-text"></i> Notes ({{ getUserNoteCount(user.id) }})
+            </button>
+            <button class="ca-btn success" (click)="activateUser(user)" *ngIf="user.status !== 'active'">
+              <i class="bi bi-check-lg"></i> Activate
+            </button>
+            <button class="ca-btn danger" (click)="confirmBlock(user)" *ngIf="user.status !== 'blocked'">
+              <i class="bi bi-slash-circle"></i> Block
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ TABLE VIEW ═══════════ -->
+      <div class="table-shell" *ngIf="!isLoading && viewMode === 'table' && filteredUsers.length > 0">
+        <div class="table-wrap">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th class="text-center">Bookings</th>
+                <th class="text-end">Total Spent</th>
+                <th>Joined</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of paginatedUsers" class="clickable-row" (click)="viewUser(user.id)">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="u-avatar-wrap sm">
+                      <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.name" class="u-avatar-img" />
+                      <div *ngIf="!user.avatar" class="u-avatar-initials sm" [style.background]="getAvatarColor(user.name)">
+                        {{ getInitials(user.name) }}
+                      </div>
+                    </div>
+                    <div class="cell-stack">
+                      <strong class="user-title">{{ user.name }}</strong>
+                      <span class="text-muted small">#{{ user.id }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="cell-stack">
+                    <span>{{ user.email }}</span>
+                    <span class="text-muted small">{{ user.phone }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-pill" [ngClass]="'status-' + getStatusColor(user.status)">
+                    {{ user.status | titlecase }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <span class="pax-badge">{{ user.totalBookings }}</span>
+                </td>
+                <td class="text-end">
+                  <strong>₹{{ user.totalSpent | number:'1.0-0' }}</strong>
+                </td>
+                <td>
+                  <span class="text-muted small">{{ user.joinDate | date:'dd MMM yyyy' }}</span>
+                </td>
+                <td class="text-end" (click)="$event.stopPropagation()">
+                  <div class="d-flex justify-content-end gap-1">
+                    <button class="icon-btn subtle" (click)="openWhatsApp(user, $event)" title="WhatsApp user">
+                      <i class="bi bi-whatsapp text-success"></i>
+                    </button>
+                    <button class="icon-btn subtle" (click)="openCrmDrawer(user, $event)" title="CRM Notes">
+                      <i class="bi bi-journal-text text-primary"></i>
+                    </button>
+                    <button class="icon-btn subtle" (click)="viewUser(user.id)" title="View profile">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════ PAGINATION CONTROLS ═══════════ -->
+      <div class="pagination-shell" *ngIf="!isLoading && filteredUsers.length > 0">
+        <div class="pagination-inner">
+          <div class="pagination-info">
+            Showing <strong>{{ (currentPage - 1) * Number(pageSize) + 1 }}</strong> to
+            <strong>{{ Math.min(currentPage * Number(pageSize), filteredUsers.length) }}</strong> of
+            <strong>{{ filteredUsers.length }}</strong> users
+          </div>
+
+          <div class="pagination-controls">
+            <div class="page-size-selector">
+              <label>Per page:</label>
+              <select class="pagination-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+                <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+              </select>
+            </div>
+
+            <div class="page-actions">
+              <button class="page-nav-btn" type="button" (click)="prevPage()" [disabled]="currentPage === 1" title="Previous Page">
+                <i class="bi bi-chevron-left"></i> <span>Prev</span>
+              </button>
+
+              <ng-container *ngFor="let p of visiblePageNumbers">
+                <span class="page-ellipsis" *ngIf="p === '...'">…</span>
+                <button
+                  class="page-btn"
+                  type="button"
+                  *ngIf="p !== '...'"
+                  [class.active]="p === currentPage"
+                  (click)="goToPage(p)">
+                  {{ p }}
+                </button>
+              </ng-container>
+
+              <button class="page-nav-btn" type="button" (click)="nextPage()" [disabled]="currentPage === totalPages" title="Next Page">
+                <span>Next</span> <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= DETAIL VIEW ================= -->
+    <div *ngIf="isDetailView" class="detail-container">
+      <div class="detail-top-nav mb-3">
+        <button class="btn-app ghost btn-sm" (click)="goBack()">
+          <i class="bi bi-arrow-left"></i> Back to All Users
+        </button>
+      </div>
+
+      <div *ngIf="user">
+        <!-- Profile Hero -->
+        <div class="profile-hero surface-card">
+          <div class="hero-inner">
+            <div class="hero-avatar-wrap">
+              <img loading="lazy" decoding="async" [src]="getAvatar(user)" class="hero-avatar" />
+              <span class="hero-status-ring" [ngClass]="'ring-' + user.status"></span>
+            </div>
+            <div class="hero-text">
+              <h2 class="hero-name">{{ user.name }}</h2>
+              <p class="hero-email">{{ user.email }}</p>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <span class="status-pill" [ngClass]="'status-' + getStatusColor(user.status)">
+                  {{ user.status | titlecase }}
+                </span>
+                <span class="text-muted small" *ngIf="user.phone">&bull; {{ user.phone }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Stats -->
+          <div class="hero-stats">
+            <div class="hs">
+              <span class="hs-val">{{ user.totalBookings || bookings.length }}</span>
+              <span class="hs-lbl">Total Bookings</span>
+            </div>
+            <div class="hs-sep"></div>
+            <div class="hs">
+              <span class="hs-val text-success">₹{{ user.totalSpent || 0 | number:'1.0-0' }}</span>
+              <span class="hs-lbl">Total Spent</span>
+            </div>
+            <div class="hs-sep"></div>
+            <div class="hs">
+              <span class="hs-val sm">{{ user.joinDate || user.created_at | date:'dd MMM yyyy' }}</span>
+              <span class="hs-lbl">Member Since</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Segment Tabs -->
+        <div class="segment-wrapper mb-3">
+          <div class="custom-tab-bar">
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="selectedSegment === 'details'"
+              (click)="selectedSegment = 'details'">
+              <i class="bi bi-person-lines-fill me-1"></i> Account Details
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="selectedSegment === 'bookings'"
+              (click)="selectedSegment = 'bookings'">
+              <i class="bi bi-receipt me-1"></i> Booking History ({{ bookings.length }})
+            </button>
+          </div>
+        </div>
+
+        <!-- ── DETAILS TAB ── -->
+        <div class="seg-content" *ngIf="selectedSegment === 'details'">
+          <div class="info-card surface-card">
+            <div class="info-row">
+              <div class="info-icon-wrap">
+                <i class="bi bi-person"></i>
+              </div>
+              <div class="info-text">
+                <span class="info-lbl">Full Legal Name</span>
+                <span class="info-val">{{ user.name }}</span>
+              </div>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-row">
+              <div class="info-icon-wrap">
+                <i class="bi bi-envelope"></i>
+              </div>
+              <div class="info-text">
+                <span class="info-lbl">Email Address</span>
+                <span class="info-val mono">{{ user.email }}</span>
+              </div>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-row">
+              <div class="info-icon-wrap">
+                <i class="bi bi-telephone"></i>
+              </div>
+              <div class="info-text">
+                <span class="info-lbl">Phone Number</span>
+                <span class="info-val">{{ user.phone || "—" }}</span>
+              </div>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-row">
+              <div class="info-icon-wrap">
+                <i class="bi bi-calendar-check"></i>
+              </div>
+              <div class="info-text">
+                <span class="info-lbl">Account Created</span>
+                <span class="info-val">{{ user.joinDate || user.created_at | date:'dd MMM yyyy' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="detail-actions mt-3">
+            <button class="btn-app ghost btn-sm wa-btn" type="button" (click)="openWhatsApp(user, $event)">
+              <i class="bi bi-whatsapp text-success"></i>
+              WhatsApp User
+            </button>
+            <button class="btn-app ghost btn-sm" type="button" (click)="openCrmDrawer(user, $event)">
+              <i class="bi bi-journal-text text-primary"></i>
+              CRM Notes ({{ getUserNoteCount(user.id) }})
+            </button>
+            <button class="btn-app secondary btn-sm" *ngIf="user.status !== 'active'" (click)="activateUser(user)">
+              <i class="bi bi-check-circle"></i>
+              Activate User
+            </button>
+            <button class="btn-app danger-ghost btn-sm" *ngIf="user.status !== 'blocked'" (click)="confirmBlock(user)">
+              <i class="bi bi-slash-circle"></i>
+              Block User
+            </button>
+          </div>
+        </div>
+
+        <!-- ── BOOKINGS TAB ── -->
+        <div class="seg-content" *ngIf="selectedSegment === 'bookings'">
+          <!-- No Bookings -->
+          <div class="empty-state surface-card" *ngIf="bookings.length === 0">
+            <div class="empty-icon">
+              <i class="bi bi-receipt"></i>
+            </div>
+            <h3>No Bookings Yet</h3>
+            <p>This user has not made any trek reservations yet.</p>
+          </div>
+
+          <!-- Booking Cards -->
+          <div class="bookings-grid-list" *ngIf="bookings.length > 0">
+            <div class="booking-card surface-card" *ngFor="let booking of bookings">
+              <div class="bc-top">
+                <div class="bc-left">
+                  <span class="bc-ref">#{{ booking.booking_reference || booking.id }}</span>
+                  <h4 class="bc-name">{{ booking.trek_name }}</h4>
+                  <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>{{ booking.booking_date || booking.date | date:'dd MMM yyyy' }}</small>
+                </div>
+                <span class="status-pill" [ngClass]="'status-' + getBookingStatusColor(booking.booking_status || booking.status)">
+                  {{ (booking.booking_status || booking.status) | titlecase }}
+                </span>
+              </div>
+              <div class="bc-pills">
+                <div class="bc-pill">
+                  <i class="bi bi-cash"></i>
+                  ₹{{ booking.total_amount || booking.amount | number:'1.0-0' }}
+                </div>
+                <div class="bc-pill">
+                  <i class="bi bi-people"></i>
+                  {{ booking.participants }} Trekkers
+                </div>
+                <div class="bc-pill">
+                  <i class="bi bi-credit-card"></i>
+                  {{ (booking.payment_status || 'Pending') | titlecase }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </app-admin-shell>
+</div>
+
+<!-- ════════════════════════════════════════════
+     Admin CRM Notes Slide-out Drawer Modal
+════════════════════════════════════════════ -->
+<div class="crm-backdrop" *ngIf="showCrmDrawer" (click)="closeCrmDrawer()">
+  <aside class="crm-drawer" (click)="$event.stopPropagation()" *ngIf="selectedCrmUser">
+    <div class="crm-drawer-header">
+      <div class="crm-user-summary">
+        <span class="crm-badge">INTERNAL CRM NOTES</span>
+        <h3 class="crm-user-name">{{ selectedCrmUser.name }}</h3>
+        <span class="crm-user-contact">{{ selectedCrmUser.email }} &bull; {{ selectedCrmUser.phone }}</span>
+      </div>
+      <button class="crm-close-btn" (click)="closeCrmDrawer()" aria-label="Close CRM notes">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Quick Note Composer -->
+    <div class="crm-composer">
+      <textarea
+        class="crm-textarea"
+        [(ngModel)]="newNoteText"
+        placeholder="Add an internal operations note (e.g. Special pickup request, dietary restriction, VIP trekker preference)..."
+        rows="3">
+      </textarea>
+      <div class="crm-composer-footer">
+        <button class="btn-app primary btn-sm" (click)="addCrmNote()" [disabled]="!newNoteText.trim()">
+          <i class="bi bi-plus-lg me-1"></i> Add Note
+        </button>
+      </div>
+    </div>
+
+    <!-- Notes List -->
+    <div class="crm-notes-list">
+      <div class="crm-notes-header">
+        <h4>Note History ({{ userNotes.length }})</h4>
+      </div>
+
+      <div *ngIf="userNotes.length === 0" class="crm-empty">
+        <i class="bi bi-journal-x"></i>
+        <p>No internal notes yet for this user. Add the first note above.</p>
+      </div>
+
+      <div *ngFor="let note of userNotes" class="crm-note-item">
+        <div class="crm-note-top">
+          <span class="crm-admin-author"><i class="bi bi-person-check-fill me-1"></i>{{ note.adminName }}</span>
+          <div class="crm-note-actions">
+            <span class="crm-note-date">{{ note.createdAt | date:'MMM dd, yyyy · hh:mm a' }}</span>
+            <button class="crm-del-btn" (click)="deleteCrmNote(note.id)" title="Delete note">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        <p class="crm-note-text">{{ note.content }}</p>
+      </div>
+    </div>
+  </aside>
+</div>

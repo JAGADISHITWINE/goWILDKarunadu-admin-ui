@@ -1,0 +1,557 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color: #0f172a;
+}
+
+.auth-page {
+  --background: #f8fafc;
+  background: #f8fafc;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+}
+
+/* ══════════════════════════════════════════════════
+   SPLIT LAYOUT CONTAINER
+   ══════════════════════════════════════════════════ */
+.auth-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: stretch;
+  background: #f8fafc;
+  position: relative;
+}
+
+/* ══════════════════════════════════════════════════
+   LEFT HERO & BRAND SHOWCASE (LUXURY EMERALD)
+   ══════════════════════════════════════════════════ */
+.brand-hero-section {
+  position: relative;
+  background: linear-gradient(160deg, #064e3b 0%, #0c3d33 45%, #05261f 100%);
+  color: #ffffff;
+  padding: 60px 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+
+  .hero-ambient-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+
+    &.glow-top {
+      top: -10%;
+      left: -10%;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(52, 211, 153, 0.22) 0%, transparent 70%);
+    }
+
+    &.glow-bottom {
+      bottom: -10%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%);
+    }
+  }
+
+  .hero-inner-flow {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    max-width: 580px;
+  }
+}
+
+/* ─── Brand Badge Header ─── */
+.brand-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  .brand-logo-frame {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    background: #ffffff;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
+
+    .brand-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  }
+
+  .brand-title-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .brand-words {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+
+      .word-go {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.6rem;
+        font-weight: 300;
+        color: #a7f3d0;
+      }
+
+      .word-wild {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2rem;
+        font-weight: 900;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+
+        .tm {
+          font-size: 0.8rem;
+          color: #34d399;
+          vertical-align: super;
+        }
+      }
+    }
+
+    .brand-kannada {
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #6ee7b7;
+      text-transform: uppercase;
+    }
+  }
+}
+
+/* ─── Hero Headline Block ─── */
+.hero-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .live-pill {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(52, 211, 153, 0.18);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    color: #a7f3d0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #34d399;
+      animation: pulse 2s infinite;
+    }
+  }
+
+  .hero-headline {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1.25;
+    letter-spacing: -0.03em;
+    color: #ffffff;
+
+    .highlight-text {
+      background: linear-gradient(135deg, #34d399 0%, #a7f3d0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+
+  .hero-summary {
+    margin: 0;
+    font-size: 0.94rem;
+    line-height: 1.6;
+    color: #d1fae5;
+  }
+}
+
+/* ─── Hero Feature Cards ─── */
+.hero-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .feature-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    transition: background 0.2s ease, transform 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateX(4px);
+    }
+
+    .feat-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #10b981;
+      color: #064e3b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .feat-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      strong {
+        font-size: 0.88rem;
+        font-weight: 800;
+        color: #ffffff;
+      }
+
+      span {
+        font-size: 0.76rem;
+        color: #a7f3d0;
+      }
+    }
+  }
+}
+
+.hero-security-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: #a7f3d0;
+
+  i {
+    color: #34d399;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   RIGHT AUTHENTICATION FORM (CRISP HIGH CONTRAST)
+   ══════════════════════════════════════════════════ */
+.auth-form-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: #f8fafc;
+
+  .login-card {
+    width: 100%;
+    max-width: 440px;
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 42px 38px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* ─── Login Card Header ─── */
+.login-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .login-portal-tag {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #059669;
+    text-transform: uppercase;
+  }
+
+  .login-title {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+  }
+
+  .login-subtitle {
+    margin: 0;
+    font-size: 0.86rem;
+    color: #64748b;
+    line-height: 1.45;
+  }
+}
+
+/* ─── Form Elements ─── */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .field-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+
+      .field-icon {
+        position: absolute;
+        left: 14px;
+        color: #94a3b8;
+        font-size: 1.1rem;
+        pointer-events: none;
+        transition: color 0.18s ease;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 12px 14px 12px 42px;
+        border-radius: 12px;
+        border: 1.5px solid #cbd5e1;
+        background: #f8fafc;
+        font-size: 0.92rem;
+        color: #0f172a;
+        font-weight: 600;
+        outline: none;
+        transition: all 0.18s ease;
+
+        &::placeholder {
+          color: #94a3b8;
+          font-weight: 400;
+        }
+
+        &:focus {
+          border-color: #059669;
+          background: #ffffff;
+          box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+
+          & ~ .field-icon {
+            color: #059669;
+          }
+        }
+      }
+
+      .btn-toggle-pw {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        color: #64748b;
+        font-size: 1.1rem;
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: #0f172a;
+        }
+      }
+
+      &.has-error .form-input {
+        border-color: #ef4444;
+        background: #fef2f2;
+      }
+    }
+
+    .field-validation-msg {
+      font-size: 0.74rem;
+      color: #dc2626;
+      font-weight: 600;
+    }
+  }
+}
+
+.login-error-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 0.84rem;
+  font-weight: 700;
+  animation: shake 0.35s ease;
+
+  i {
+    font-size: 1.2rem;
+    color: #ef4444;
+    flex-shrink: 0;
+  }
+}
+
+.btn-login-submit {
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 8px 20px rgba(6, 78, 59, 0.28);
+  transition: all 0.2s ease;
+  margin-top: 4px;
+
+  i {
+    font-size: 1rem;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #047857 0%, #059669 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(6, 78, 59, 0.38);
+
+    i {
+      transform: translateX(4px);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.login-card-footer {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+
+  p {
+    margin: 0;
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+
+  small {
+    font-size: 0.7rem;
+    color: #94a3b8;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE ADAPTATIONS
+   ══════════════════════════════════════════════════ */
+@media (max-width: 960px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-hero-section {
+    padding: 40px 24px;
+    align-items: center;
+    text-align: center;
+
+    .hero-inner-flow {
+      align-items: center;
+    }
+
+    .brand-badge-row {
+      justify-content: center;
+    }
+
+    .hero-text-block .live-pill {
+      align-self: center;
+    }
+
+    .hero-headline {
+      font-size: 1.8rem;
+    }
+
+    .hero-features-list {
+      width: 100%;
+    }
+  }
+
+  .auth-form-section {
+    padding: 24px 16px;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+   ══════════════════════════════════════════════════ */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}

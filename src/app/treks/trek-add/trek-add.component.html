@@ -1,0 +1,717 @@
+<div>
+  <app-admin-shell
+    title="Add Trek & Batches"
+    subtitle="Configure trek itinerary, pricing, elevation profile, and assign batch captains."
+    sectionLabel="Treks">
+
+    <!-- HERO EXCEL & QUICK TOOLS BANNER -->
+    <div class="excel-hero-card mb-4" *ngIf="!isUploadingExcel">
+      <div class="hero-left">
+        <div class="hero-icon-pulse">
+          <i class="bi bi-file-earmark-excel-fill"></i>
+        </div>
+        <div>
+          <div class="hero-badge">⚡ Quick Batch Import</div>
+          <h3 class="hero-title">Bulk Create Treks & Batches</h3>
+          <p class="hero-desc">Import multi-batch schedules, itineraries, and assigned Captain contacts from Excel in one click.</p>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        <button type="button" class="btn-app btn-ghost btn-sm" (click)="downloadTemplate()" title="Download Multi-Batch Template">
+          <i class="bi bi-download me-1"></i> Multi-Batch Template
+        </button>
+        <button type="button" class="btn-app btn-ghost btn-sm" (click)="downloadSingleBatchTemplate()" title="Download Single Batch Template">
+          <i class="bi bi-file-earmark me-1"></i> Single Batch
+        </button>
+        <button type="button" class="btn-app btn-primary btn-sm" (click)="excelFileInput.click()">
+          <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload Excel
+        </button>
+        <input #excelFileInput type="file" accept=".xlsx,.xls" hidden (change)="onExcelFileSelect($event)" />
+      </div>
+    </div>
+
+    <!-- EXCEL LOADING OVERLAY -->
+    <div class="excel-loading-card mb-4" *ngIf="isUploadingExcel">
+      <div class="spinner-border text-primary me-3" role="status"></div>
+      <div>
+        <h5 class="mb-1">Parsing Excel & Generating Batches...</h5>
+        <p class="text-muted mb-0">Populating dates, itineraries, and captain assignments.</p>
+      </div>
+    </div>
+
+    <!-- STATUS BANNER -->
+    <div class="status-banner mb-3" *ngIf="statusMessage" [ngClass]="'status-' + statusTone">
+      <i class="bi" [ngClass]="statusTone === 'success' ? 'bi-check-circle-fill' : statusTone === 'warning' ? 'bi-exclamation-triangle-fill' : 'bi-x-circle-fill'"></i>
+      <span>{{ statusMessage }}</span>
+    </div>
+
+    <!-- STEPPER / TAB NAVIGATION BAR -->
+    <div class="nav-stepper-container mb-4">
+      <div class="stepper-scroll">
+        <button
+          *ngFor="let sec of sections"
+          type="button"
+          class="step-pill"
+          [class.active]="activeSection === sec.id"
+          (click)="setActiveSection(sec.id)">
+          <i class="bi {{ sec.icon }} me-2"></i>
+          <span>{{ sec.label }}</span>
+          <span class="step-badge" *ngIf="sec.id === 'batches'">{{ batches.length }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- FORM WRAPPER -->
+    <form [formGroup]="addTrekForm" (ngSubmit)="saveTrek()" class="form-container">
+
+      <!-- ==========================================
+           SECTION 1: TREK BASICS & OVERVIEW
+           ========================================== -->
+      <div class="section-card mb-4" *ngIf="activeSection === 'basic'">
+        <div class="section-header">
+          <div class="header-icon"><i class="bi bi-geo-alt-fill"></i></div>
+          <div class="header-text">
+            <h4 class="mb-0">1. Trek Basics & Classification</h4>
+            <p class="mb-0">Core destination metadata and physical difficulty parameters</p>
+          </div>
+        </div>
+
+        <div class="section-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Trek Title <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control modern-input"
+                [class.is-invalid]="isInvalid('name')"
+                formControlName="name"
+                placeholder="e.g. Kudremukh Peak Expedition" />
+              <div class="invalid-feedback" *ngIf="isInvalid('name')">Trek title is required.</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label">Location / Region <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control modern-input"
+                [class.is-invalid]="isInvalid('location')"
+                formControlName="location"
+                placeholder="e.g. Chikmagalur, Western Ghats" />
+              <div class="invalid-feedback" *ngIf="isInvalid('location')">Location is required.</div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label class="form-label">Difficulty <span class="text-danger">*</span></label>
+              <select class="form-select modern-select" [class.is-invalid]="isInvalid('difficulty')" formControlName="difficulty">
+                <option value="" disabled selected>Select Difficulty</option>
+                <option *ngFor="let d of difficulties" [value]="d">{{ d }}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="isInvalid('difficulty')">Select a difficulty level.</div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label class="form-label">Category <span class="text-danger">*</span></label>
+              <select class="form-select modern-select" [class.is-invalid]="isInvalid('category')" formControlName="category">
+                <option value="" disabled selected>Select Category</option>
+                <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="isInvalid('category')">Select a category.</div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label class="form-label">Collection / Series</label>
+              <select class="form-select modern-select" formControlName="collection">
+                <option value="">None / Standard</option>
+                <option *ngFor="let col of collections" [value]="col">{{ col }}</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label class="form-label">Fitness Level Required</label>
+              <select class="form-select modern-select" formControlName="fitnessLevel">
+                <option value="">Recommended / Any</option>
+                <option *ngFor="let f of fitnessLevels" [value]="f">{{ f }}</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Description & Experience Summary</label>
+              <textarea
+                class="form-control modern-input"
+                rows="4"
+                formControlName="description"
+                placeholder="Describe the landscape, viewpoints, trail highlights, and what makes this trek extraordinary..."></textarea>
+            </div>
+
+            <!-- HIGHLIGHTS ARRAY -->
+            <div class="col-12 mt-4">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label mb-0 fw-bold"><i class="bi bi-stars text-warning me-1"></i> Key Highlights</label>
+                <button type="button" class="btn-app btn-ghost btn-sm" (click)="addHighlight()">
+                  <i class="bi bi-plus-circle me-1"></i> Add Highlight
+                </button>
+              </div>
+
+              <div formArrayName="highlights" class="d-flex flex-column gap-2">
+                <div *ngFor="let h of highlights.controls; let i = index" class="input-group">
+                  <span class="input-group-text bg-light text-muted">#{{ i + 1 }}</span>
+                  <input type="text" class="form-control modern-input" [formControlName]="i" placeholder="e.g. 360° Shola Grassland Panorama & Waterfalls" />
+                  <button type="button" class="btn btn-outline-danger" (click)="removeHighlight(i)" [disabled]="highlights.length <= 1">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-footer">
+          <button type="button" class="btn-app btn-primary ms-auto" (click)="setActiveSection('batches')">
+            Next: Batches & Captains <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SECTION 2: BATCHES & CAPTAIN CONTACTS
+           ========================================== -->
+      <div class="section-card mb-4" *ngIf="activeSection === 'batches'">
+        <div class="section-header d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="header-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="header-text">
+              <h4 class="mb-0">2. Batches & Assigned Captains</h4>
+              <p class="mb-0">Manage batch dates, slots, pricing, and assign Trek Captains with direct contact details.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-app btn-primary btn-sm" (click)="addBatch()">
+            <i class="bi bi-plus-lg me-1"></i> Add New Batch
+          </button>
+        </div>
+
+        <div class="section-body" formArrayName="batches">
+          <div *ngFor="let b of batches.controls; let i = index" [formGroupName]="i" class="batch-panel mb-4">
+            
+            <!-- BATCH PANEL HEADER -->
+            <div class="batch-panel-header">
+              <div class="d-flex align-items-center gap-2">
+                <span class="batch-badge">Batch #{{ i + 1 }}</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle" *ngIf="b.get('batchStatus')?.value === 'active'">Active</span>
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle" *ngIf="b.get('batchStatus')?.value === 'inactive'">Inactive</span>
+              </div>
+              <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeBatch(i)" [disabled]="batches.length <= 1" title="Delete Batch">
+                <i class="bi bi-trash me-1"></i> Remove Batch
+              </button>
+            </div>
+
+            <!-- BATCH SCHEDULE & CAPACITY -->
+            <div class="row g-3 mt-2">
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Start Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control modern-input" [class.is-invalid]="isBatchFieldInvalid(i, 'startDate')" formControlName="startDate" />
+                <div class="invalid-feedback" *ngIf="isBatchFieldInvalid(i, 'startDate')">Required.</div>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">End Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control modern-input" [class.is-invalid]="isBatchFieldInvalid(i, 'endDate')" formControlName="endDate" />
+                <div class="invalid-feedback" *ngIf="isBatchFieldInvalid(i, 'endDate')">Required.</div>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Available Slots <span class="text-danger">*</span></label>
+                <input type="number" min="1" class="form-control modern-input" [class.is-invalid]="isBatchFieldInvalid(i, 'availableSlots')" formControlName="availableSlots" placeholder="e.g. 25" />
+                <div class="invalid-feedback" *ngIf="isBatchFieldInvalid(i, 'availableSlots')">Required.</div>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Price per Person (₹) <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light">₹</span>
+                  <input type="number" min="0" class="form-control modern-input" [class.is-invalid]="isBatchFieldInvalid(i, 'price')" formControlName="price" placeholder="3499" />
+                </div>
+                <div class="invalid-feedback" *ngIf="isBatchFieldInvalid(i, 'price')">Required.</div>
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Duration Label</label>
+                <input type="text" class="form-control modern-input" formControlName="duration" placeholder="e.g. 2 Days / 1 Night" />
+              </div>
+
+              <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label">Batch Status <span class="text-danger">*</span></label>
+                <select class="form-select modern-select" [class.is-invalid]="isBatchFieldInvalid(i, 'batchStatus')" formControlName="batchStatus">
+                  <option value="" disabled>Select Status</option>
+                  <option *ngFor="let s of batchStatuses" [value]="s">{{ s }}</option>
+                </select>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <label class="form-label">Min - Max Age</label>
+                <div class="d-flex gap-1">
+                  <input type="number" class="form-control modern-input text-center" formControlName="minAge" placeholder="Min (12)" />
+                  <input type="number" class="form-control modern-input text-center" formControlName="maxAge" placeholder="Max (65)" />
+                </div>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <label class="form-label">Min - Max Participants</label>
+                <div class="d-flex gap-1">
+                  <input type="number" class="form-control modern-input text-center" formControlName="minParticipants" placeholder="Min (5)" />
+                  <input type="number" class="form-control modern-input text-center" formControlName="maxParticipants" placeholder="Max (30)" />
+                </div>
+              </div>
+            </div>
+
+            <!-- CAPTAIN / TREK LEADER CARD (NEW DEDICATED SECTION) -->
+            <div class="captain-subcard mt-4 p-3 rounded border">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="captain-icon-badge"><i class="bi bi-person-badge-fill"></i></div>
+                <div>
+                  <h6 class="mb-0 fw-bold">Trek Captain & Emergency Contacts for Batch #{{ i + 1 }}</h6>
+                  <p class="text-muted small mb-0">Assigned leader details shared with booked participants on confirmation & WhatsApp roster.</p>
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Captain / Leader Name</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-person-fill"></i></span>
+                    <input type="text" class="form-control modern-input" formControlName="captainName" placeholder="e.g. Captain Jagadish / Arjun" />
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Captain Contact / WhatsApp Phone</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-telephone-fill"></i></span>
+                    <input type="tel" class="form-control modern-input" formControlName="captainPhone" placeholder="e.g. +91 98765 43210" />
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Captain Email / Alt Contact</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-envelope-fill"></i></span>
+                    <input type="email" class="form-control modern-input" formControlName="captainEmail" placeholder="e.g. captain@gowild.in" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="section-footer d-flex justify-content-between">
+          <button type="button" class="btn-app btn-ghost" (click)="setActiveSection('basic')">
+            <i class="bi bi-arrow-left me-1"></i> Back to Basics
+          </button>
+          <button type="button" class="btn-app btn-primary" (click)="setActiveSection('itinerary')">
+            Next: Itinerary & Waypoints <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SECTION 3: ITINERARY & ELEVATION WAYPOINTS
+           ========================================== -->
+      <div class="section-card mb-4" *ngIf="activeSection === 'itinerary'">
+        <div class="section-header">
+          <div class="header-icon"><i class="bi bi-map-fill"></i></div>
+          <div class="header-text">
+            <h4 class="mb-0">3. Day-by-Day Itinerary & Elevation Profile</h4>
+            <p class="mb-0">Schedule activities for each day and establish checkpoint milestones.</p>
+          </div>
+        </div>
+
+        <div class="section-body">
+          
+          <!-- ITINERARY DAYS BUILDER (For Primary Batch) -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h5 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2 text-primary"></i>Day-by-Day Schedule (Batch #1)</h5>
+              <button type="button" class="btn-app btn-ghost btn-sm" (click)="addItineraryDay(0)">
+                <i class="bi bi-plus-circle me-1"></i> Add Day
+              </button>
+            </div>
+
+            <div *ngIf="batches.length > 0" class="d-flex flex-column gap-3">
+              <div *ngFor="let day of getItineraryDays(0).controls; let dIndex = index" class="day-timeline-card p-3 rounded border">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div class="d-flex align-items-center gap-2 flex-grow-1 me-3" [formGroup]="$any(day)">
+                    <span class="day-pill">Day {{ dIndex + 1 }}</span>
+                    <input type="text" class="form-control modern-input" formControlName="title" placeholder="e.g. Bangalore Departure & Basecamp Acclimatization" />
+                  </div>
+                  <div class="d-flex gap-1">
+                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="addActivity(0, dIndex)">
+                      <i class="bi bi-plus-lg me-1"></i> Activity
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeItineraryDay(0, dIndex)" [disabled]="getItineraryDays(0).length <= 1">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- ACTIVITIES FOR THIS DAY -->
+                <div class="activities-list mt-2 ps-3 border-start">
+                  <div *ngFor="let act of getActivities(0, dIndex).controls; let aIndex = index" [formGroup]="$any(act)" class="d-flex gap-2 align-items-center mb-2">
+                    <input type="time" class="form-control modern-input" style="max-width: 140px;" formControlName="activityTime" />
+                    <input type="text" class="form-control modern-input flex-grow-1" formControlName="activityText" placeholder="e.g. Arrive at Chikmagalur, brief safety orientation & breakfast" />
+                    <button type="button" class="btn btn-link text-danger p-0" (click)="removeActivity(0, dIndex, aIndex)">
+                      <i class="bi bi-x-circle-fill fs-5"></i>
+                    </button>
+                  </div>
+                  <div *ngIf="getActivities(0, dIndex).length === 0" class="text-muted small py-1">
+                    No timestamped activities added yet. Click "+ Activity" above to add time slots.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4" />
+
+          <!-- ELEVATION WAYPOINTS MATRIX -->
+          <div>
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div>
+                <h5 class="fw-bold mb-0"><i class="bi bi-activity me-2 text-success"></i>Elevation Profile & Trail Checkpoints</h5>
+                <p class="text-muted small mb-0">Renders the interactive SVG elevation chart on user discovery and booking pages.</p>
+              </div>
+              <button type="button" class="btn-app btn-ghost btn-sm" (click)="addWaypoint()">
+                <i class="bi bi-plus-circle me-1"></i> Add Checkpoint
+              </button>
+            </div>
+
+            <div formArrayName="elevationWaypoints" class="d-flex flex-column gap-2">
+              <div *ngFor="let wp of elevationWaypoints.controls; let wIndex = index" [formGroupName]="wIndex" class="waypoint-row p-2 rounded border bg-light d-flex flex-wrap align-items-center gap-2">
+                <span class="badge bg-secondary">#{{ wIndex + 1 }}</span>
+                
+                <div class="input-group" style="width: 140px;">
+                  <span class="input-group-text bg-white small">KM</span>
+                  <input type="number" step="0.1" min="0" class="form-control modern-input text-center" formControlName="km" placeholder="0.0" />
+                </div>
+
+                <div class="input-group" style="width: 160px;">
+                  <span class="input-group-text bg-white small">Elev (m)</span>
+                  <input type="number" min="0" class="form-control modern-input text-center" formControlName="elevation" placeholder="950" />
+                </div>
+
+                <input type="text" class="form-control modern-input flex-grow-1" style="min-width: 160px;" formControlName="name" placeholder="Checkpoint Name (e.g. Ridge Summit)" />
+                <input type="text" class="form-control modern-input flex-grow-1" style="min-width: 180px;" formControlName="note" placeholder="Short milestone note..." />
+
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeWaypoint(wIndex)" [disabled]="elevationWaypoints.length <= 2">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="section-footer d-flex justify-content-between">
+          <button type="button" class="btn-app btn-ghost" (click)="setActiveSection('batches')">
+            <i class="bi bi-arrow-left me-1"></i> Back to Batches
+          </button>
+          <button type="button" class="btn-app btn-primary" (click)="setActiveSection('gear')">
+            Next: Checklist & Inclusions <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SECTION 4: CHECKLIST, INCLUSIONS & NOTES
+           ========================================== -->
+      <div class="section-card mb-4" *ngIf="activeSection === 'gear'">
+        <div class="section-header">
+          <div class="header-icon"><i class="bi bi-backpack-fill"></i></div>
+          <div class="header-text">
+            <h4 class="mb-0">4. Inclusions, Things to Carry & Advisory Notes</h4>
+            <p class="mb-0">Essential gear checklist and transparent package pricing breakdown.</p>
+          </div>
+        </div>
+
+        <div class="section-body">
+          <div class="row g-4">
+            
+            <!-- INCLUSIONS & EXCLUSIONS -->
+            <div class="col-12 col-lg-6" *ngIf="batches.length > 0">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label fw-bold mb-0 text-success"><i class="bi bi-check-circle-fill me-1"></i> Inclusions</label>
+                <button type="button" class="btn-app btn-ghost btn-sm" (click)="addInclusion(0)">
+                  <i class="bi bi-plus-lg me-1"></i> Add
+                </button>
+              </div>
+              <div class="d-flex flex-column gap-2">
+                <div *ngFor="let inc of getInclusions(0).controls; let ii = index" class="input-group">
+                  <span class="input-group-text bg-success-subtle text-success">✓</span>
+                  <input type="text" class="form-control modern-input" [formControl]="asFormControl(getInclusions(0).at(ii))" placeholder="e.g. Certified Mountain Guide, Forest Permits & Camping Tents" />
+                  <button type="button" class="btn btn-outline-danger" (click)="removeInclusion(0, ii)" [disabled]="getInclusions(0).length <= 1">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-6" *ngIf="batches.length > 0">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label fw-bold mb-0 text-danger"><i class="bi bi-x-circle-fill me-1"></i> Exclusions</label>
+                <button type="button" class="btn-app btn-ghost btn-sm" (click)="addExclusion(0)">
+                  <i class="bi bi-plus-lg me-1"></i> Add
+                </button>
+              </div>
+              <div class="d-flex flex-column gap-2">
+                <div *ngFor="let exc of getExclusions(0).controls; let ei = index" class="input-group">
+                  <span class="input-group-text bg-danger-subtle text-danger">✕</span>
+                  <input type="text" class="form-control modern-input" [formControl]="asFormControl(getExclusions(0).at(ei))" placeholder="e.g. Personal Porterage, Travel Insurance, Extra Food Items" />
+                  <button type="button" class="btn btn-outline-danger" (click)="removeExclusion(0, ei)" [disabled]="getExclusions(0).length <= 1">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- THINGS TO CARRY -->
+            <div class="col-12 col-lg-6">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label fw-bold mb-0 text-primary"><i class="bi bi-backpack2-fill me-1"></i> Things to Carry Checklist</label>
+                <button type="button" class="btn-app btn-ghost btn-sm" (click)="addThingToCarry()">
+                  <i class="bi bi-plus-lg me-1"></i> Add Item
+                </button>
+              </div>
+              <div formArrayName="thingsToCarry" class="d-flex flex-column gap-2">
+                <div *ngFor="let t of thingsToCarry.controls; let ti = index" class="input-group">
+                  <span class="input-group-text bg-light">🎒</span>
+                  <input type="text" class="form-control modern-input" [formControlName]="ti" placeholder="e.g. 2L Reusable Water Bottle, High-Traction Trek Shoes" />
+                  <button type="button" class="btn btn-outline-danger" (click)="removeThingToCarry(ti)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                <div *ngIf="thingsToCarry.length === 0" class="text-muted small">No custom items added. Click "+ Add Item" above.</div>
+              </div>
+            </div>
+
+            <!-- IMPORTANT NOTES -->
+            <div class="col-12 col-lg-6">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label fw-bold mb-0 text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i> Important Guidelines & Rules</label>
+                <button type="button" class="btn-app btn-ghost btn-sm" (click)="addImportantNote()">
+                  <i class="bi bi-plus-lg me-1"></i> Add Note
+                </button>
+              </div>
+              <div formArrayName="importantNotes" class="d-flex flex-column gap-2">
+                <div *ngFor="let n of importantNotes.controls; let ni = index" class="input-group">
+                  <span class="input-group-text bg-light">⚠️</span>
+                  <input type="text" class="form-control modern-input" [formControlName]="ni" placeholder="e.g. Strict No-Smoking & Zero Plastic litter policy in reserve forest" />
+                  <button type="button" class="btn btn-outline-danger" (click)="removeImportantNote(ni)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                <div *ngIf="importantNotes.length === 0" class="text-muted small">No advisory notes added. Click "+ Add Note" above.</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="section-footer d-flex justify-content-between">
+          <button type="button" class="btn-app btn-ghost" (click)="setActiveSection('itinerary')">
+            <i class="bi bi-arrow-left me-1"></i> Back to Itinerary
+          </button>
+          <button type="button" class="btn-app btn-primary" (click)="setActiveSection('media')">
+            Next: Media & Gallery <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SECTION 5: MEDIA & GALLERY DROPZONE
+           ========================================== -->
+      <div class="section-card mb-4" *ngIf="activeSection === 'media'">
+        <div class="section-header">
+          <div class="header-icon"><i class="bi bi-images"></i></div>
+          <div class="header-text">
+            <h4 class="mb-0">5. Cover Image & Gallery Media</h4>
+            <p class="mb-0">Upload high-resolution photography for trek card covers and detail sliders.</p>
+          </div>
+        </div>
+
+        <div class="section-body">
+          <div class="row g-4">
+            
+            <!-- COVER IMAGE DROPZONE -->
+            <div class="col-12 col-md-5">
+              <label class="form-label fw-bold">Featured Cover Image (Hero)</label>
+              
+              <div class="dropzone-box" (click)="coverFileInput.click()" *ngIf="!coverPreview">
+                <i class="bi bi-cloud-arrow-up display-4 text-primary mb-2"></i>
+                <h6 class="fw-bold mb-1">Click to Upload Cover Photo</h6>
+                <p class="text-muted small mb-0">Recommended: 1920x1080px (16:9), PNG/JPG/WEBP</p>
+                <input #coverFileInput type="file" accept="image/*" hidden (change)="onCoverImageChange($event)" />
+              </div>
+
+              <div class="image-preview-card" *ngIf="coverPreview">
+                <img [src]="coverPreview" alt="Cover Preview" class="cover-img rounded" />
+                <button type="button" class="btn-remove-img" (click)="removeCoverImage()">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+                <div class="cover-badge">Featured Cover</div>
+              </div>
+            </div>
+
+            <!-- GALLERY DROPZONE -->
+            <div class="col-12 col-md-7">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label fw-bold mb-0">Gallery Visuals ({{ galleryPreviews.length }} uploaded)</label>
+                <button type="button" class="btn-app btn-ghost btn-sm" (click)="galleryFileInput.click()">
+                  <i class="bi bi-plus-lg me-1"></i> Add Images
+                </button>
+                <input #galleryFileInput type="file" accept="image/*" multiple hidden (change)="onGalleryImagesChange($event)" />
+              </div>
+
+              <div class="gallery-grid" *ngIf="galleryPreviews.length > 0">
+                <div *ngFor="let preview of galleryPreviews; let gIndex = index" class="gallery-thumb-card">
+                  <img [src]="preview" alt="Gallery photo" class="thumb-img rounded" />
+                  <button type="button" class="btn-remove-thumb" (click)="removeGalleryImage(gIndex)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="dropzone-box py-4 text-center mt-2" (click)="galleryFileInput.click()" *ngIf="galleryPreviews.length === 0">
+                <i class="bi bi-camera-fill fs-2 text-muted mb-1"></i>
+                <p class="text-muted small mb-0">Upload multi-angle trail photos, waterfalls, campsites & summit panoramas.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="section-footer d-flex justify-content-between">
+          <button type="button" class="btn-app btn-ghost" (click)="setActiveSection('gear')">
+            <i class="bi bi-arrow-left me-1"></i> Back to Checklist
+          </button>
+          <button type="button" class="btn-app btn-primary" (click)="setActiveSection('promotions')">
+            Next: Coupons & Discounts <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SECTION 6: PROMOTIONS & COUPONS
+           ========================================== -->
+      <div class="section-card mb-4" *ngIf="activeSection === 'promotions'" formGroupName="coupon">
+        <div class="section-header d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="header-icon"><i class="bi bi-tag-fill"></i></div>
+            <div class="header-text">
+              <h4 class="mb-0">6. Trek Launch Promotion & Coupon (Optional)</h4>
+              <p class="mb-0">Create an introductory discount or early-bird promotional code for this trek.</p>
+            </div>
+          </div>
+          <div class="form-check form-switch fs-5">
+            <input class="form-check-input" type="checkbox" formControlName="enabled" id="enableCouponToggle" />
+          </div>
+        </div>
+
+        <div class="section-body" *ngIf="addTrekForm.get('coupon.enabled')?.value">
+          <div class="row g-3">
+            <div class="col-12 col-sm-6 col-md-4">
+              <label class="form-label">Coupon Code <span class="text-danger">*</span></label>
+              <input type="text" class="form-control modern-input text-uppercase fw-bold" formControlName="code" placeholder="e.g. SUMMIT2026" />
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+              <label class="form-label">Discount Type</label>
+              <select class="form-select modern-select" formControlName="discountType">
+                <option value="percentage">Percentage (%)</option>
+                <option value="flat">Flat Cash (₹)</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+              <label class="form-label">Discount Value</label>
+              <input type="number" min="1" class="form-control modern-input" formControlName="discountValue" placeholder="10" />
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+              <label class="form-label">Min Booking Amount (₹)</label>
+              <input type="number" min="0" class="form-control modern-input" formControlName="minBookingAmount" placeholder="0" />
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+              <label class="form-label">Max Discount Cap (₹)</label>
+              <input type="number" min="0" class="form-control modern-input" formControlName="maxDiscountAmount" placeholder="Optional cap" />
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+              <label class="form-label">Usage Limit (Seats)</label>
+              <input type="number" min="1" class="form-control modern-input" formControlName="usageLimit" placeholder="e.g. 50" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-body text-muted text-center py-4" *ngIf="!addTrekForm.get('coupon.enabled')?.value">
+          <i class="bi bi-tag fs-2 text-muted mb-2 d-block"></i>
+          <span>Promotional coupon disabled. Toggle switch above to activate an introductory discount code.</span>
+        </div>
+
+        <div class="section-footer d-flex justify-content-between">
+          <button type="button" class="btn-app btn-ghost" (click)="setActiveSection('media')">
+            <i class="bi bi-arrow-left me-1"></i> Back to Media
+          </button>
+          <button type="submit" class="btn-app btn-primary" [disabled]="isSaving">
+            <span *ngIf="!isSaving"><i class="bi bi-check2-circle me-1"></i> Publish Trek & Batches</span>
+            <span *ngIf="isSaving"><span class="spinner-border spinner-border-sm me-1"></span> Publishing...</span>
+          </button>
+        </div>
+      </div>
+
+    </form>
+
+    <!-- STICKY BOTTOM SUBMISSION & LIVE METRICS BAR -->
+    <div class="sticky-form-footer">
+      <div class="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-3">
+        
+        <!-- LIVE SUMMARY CHIPS -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <div class="summary-chip" *ngIf="addTrekForm.get('name')?.value">
+            <i class="bi bi-geo-alt-fill text-primary me-1"></i>
+            <strong>{{ addTrekForm.get('name')?.value }}</strong>
+          </div>
+          <div class="summary-chip">
+            <i class="bi bi-people-fill text-info me-1"></i>
+            <span>{{ totalBatchesCount }} Batch{{ totalBatchesCount > 1 ? 'es' : '' }}</span>
+          </div>
+          <div class="summary-chip" [class.highlight]="totalCaptainsAssigned > 0">
+            <i class="bi bi-person-badge-fill text-success me-1"></i>
+            <span>{{ totalCaptainsAssigned }}/{{ totalBatchesCount }} Captains Assigned</span>
+          </div>
+          <div class="summary-chip" *ngIf="minTrekPrice > 0">
+            <i class="bi bi-currency-rupee text-warning me-1"></i>
+            <span>From ₹{{ minTrekPrice | number }}</span>
+          </div>
+          <div class="draft-indicator" *ngIf="lastAutoSavedAt">
+            <i class="bi bi-cloud-check-fill text-success me-1"></i>
+            <span class="small text-muted">Autosaved {{ lastAutoSavedAt | date:'shortTime' }}</span>
+          </div>
+        </div>
+
+        <!-- ACTION CTAS -->
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn-app btn-ghost" (click)="cancel()">
+            Cancel
+          </button>
+          <button type="button" class="btn-app btn-primary" (click)="saveTrek()" [disabled]="isSaving">
+            <span *ngIf="!isSaving"><i class="bi bi-check2-circle me-1"></i> Save & Publish Trek</span>
+            <span *ngIf="isSaving"><span class="spinner-border spinner-border-sm me-1"></span> Saving...</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </app-admin-shell>
+</div>

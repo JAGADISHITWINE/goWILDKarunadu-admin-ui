@@ -1,0 +1,235 @@
+<div class="editor-page">
+  <div class="editor-container">
+    <!-- HERO BAR -->
+    <header class="editor-hero">
+      <div class="hero-left">
+        <div class="crumb-row">
+          <a routerLink="/admin/blog/posts" class="crumb-link">
+            <i class="bi bi-arrow-left"></i> Blog Posts
+          </a>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-curr">{{ isEditMode ? 'Edit Story' : 'New Story' }}</span>
+        </div>
+        <h1 class="page-title">{{ isEditMode ? 'Edit Article' : 'Draft New Article' }}</h1>
+        <p class="page-subtitle">Craft compelling trek experiences, nature guides, and updates for travelers.</p>
+      </div>
+
+      <div class="hero-actions">
+        <button type="button" class="btn-app secondary" routerLink="/admin/blog/posts">
+          <i class="bi bi-x-lg"></i>
+          <span>Cancel</span>
+        </button>
+        <button type="button" class="btn-app primary" (click)="savePost()">
+          <i class="bi bi-cloud-arrow-up"></i>
+          <span>Save Changes</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN FORM -->
+    <form [formGroup]="postForm" class="editor-layout">
+      <!-- LEFT / MAIN CONTENT AREA -->
+      <section class="editor-main">
+        <!-- TITLE CARD -->
+        <div class="editor-card">
+          <div class="field-head">
+            <label class="field-title">Article Title <span class="req">*</span></label>
+            <span class="char-count">{{ (postForm.get('title')?.value || '').length }}/120</span>
+          </div>
+          <input 
+            type="text" 
+            formControlName="title" 
+            class="app-input title-input" 
+            placeholder="e.g. 10 Essential Safety Tips for Monsoon Trekking in Western Ghats" 
+          />
+          <div class="field-error" *ngIf="postForm.get('title')?.invalid && postForm.get('title')?.touched">
+            <i class="bi bi-exclamation-circle"></i> Title is required
+          </div>
+        </div>
+
+        <!-- EXCERPT CARD -->
+        <div class="editor-card">
+          <div class="field-head">
+            <label class="field-title">Summary & Excerpt <span class="req">*</span></label>
+            <span class="char-count">{{ (postForm.get('excerpt')?.value || '').length }}/300</span>
+          </div>
+          <textarea 
+            formControlName="excerpt" 
+            rows="3" 
+            class="app-textarea" 
+            placeholder="Write a concise, engaging summary to appear on search results, cards, and social shares...">
+          </textarea>
+          <div class="field-error" *ngIf="postForm.get('excerpt')?.invalid && postForm.get('excerpt')?.touched">
+            <i class="bi bi-exclamation-circle"></i> Excerpt is required
+          </div>
+        </div>
+
+        <!-- RICH STORY BODY -->
+        <div class="editor-card story-card">
+          <div class="card-head-row">
+            <div class="field-head-inline">
+              <label class="field-title">Full Story Content <span class="req">*</span></label>
+              <span class="field-hint">Supports Markdown & HTML</span>
+            </div>
+            
+            <div class="editor-mode-toggle">
+              <button class="editor-mode-btn" [class.active]="!isContentPreview" type="button" (click)="isContentPreview = false">
+                <i class="bi bi-code-square"></i> Editor
+              </button>
+              <button class="editor-mode-btn" [class.active]="isContentPreview" type="button" (click)="isContentPreview = true">
+                <i class="bi bi-eye"></i> Live Preview
+              </button>
+            </div>
+          </div>
+
+          <!-- Formatting Toolbar -->
+          <div class="rich-toolbar" *ngIf="!isContentPreview">
+            <div class="tool-btn-group">
+              <button type="button" class="rt-btn" (click)="insertFormat('**', '**')" title="Bold"><i class="bi bi-type-bold"></i></button>
+              <button type="button" class="rt-btn" (click)="insertFormat('*', '*')" title="Italic"><i class="bi bi-type-italic"></i></button>
+              <button type="button" class="rt-btn" (click)="insertFormat('~~', '~~')" title="Strikethrough"><i class="bi bi-type-strikethrough"></i></button>
+            </div>
+            <span class="rt-divider"></span>
+            <div class="tool-btn-group">
+              <button type="button" class="rt-btn" (click)="insertFormat('## ')" title="Heading 2"><i class="bi bi-type-h2"></i></button>
+              <button type="button" class="rt-btn" (click)="insertFormat('### ')" title="Heading 3"><i class="bi bi-type-h3"></i></button>
+            </div>
+            <span class="rt-divider"></span>
+            <div class="tool-btn-group">
+              <button type="button" class="rt-btn" (click)="insertFormat('- ')" title="Bullet List"><i class="bi bi-list-ul"></i></button>
+              <button type="button" class="rt-btn" (click)="insertFormat('1. ')" title="Numbered List"><i class="bi bi-list-ol"></i></button>
+              <button type="button" class="rt-btn" (click)="insertFormat('> ')" title="Quote"><i class="bi bi-quote"></i></button>
+              <button type="button" class="rt-btn" (click)="insertFormat('```\n', '\n```')" title="Code Block"><i class="bi bi-code-slash"></i></button>
+            </div>
+            <span class="rt-divider"></span>
+            <div class="tool-btn-group">
+              <button type="button" class="rt-btn" (click)="insertFormat('[', '](https://)')" title="Insert Link"><i class="bi bi-link-45deg"></i></button>
+              <button type="button" class="rt-btn" (click)="insertFormat('![Alt text](', ')')" title="Insert Image Link"><i class="bi bi-card-image"></i></button>
+            </div>
+          </div>
+
+          <!-- Write Mode -->
+          <textarea
+            *ngIf="!isContentPreview"
+            formControlName="content"
+            rows="18"
+            class="app-textarea story-textarea"
+            placeholder="Write your article narrative here. Use headers, bullet points, quotes, and images to make it engaging...">
+          </textarea>
+
+          <!-- Live Preview Mode -->
+          <div *ngIf="isContentPreview" class="content-preview-pane">
+            <div class="preview-story-body" [innerHTML]="postForm.get('content')?.value || '<em>No article content written yet...</em>'"></div>
+          </div>
+
+          <div class="field-error" *ngIf="postForm.get('content')?.invalid && postForm.get('content')?.touched">
+            <i class="bi bi-exclamation-circle"></i> Story content is required
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT / SIDEBAR SETTINGS -->
+      <aside class="editor-side">
+        <!-- PUBLISH STATUS & CATEGORY -->
+        <div class="editor-card side-card">
+          <h3 class="card-section-title">
+            <i class="bi bi-sliders2"></i> Settings & Taxonomy
+          </h3>
+
+          <div class="field-group">
+            <label>Category <span class="req">*</span></label>
+            <select formControlName="category" class="app-select">
+              <option value="" disabled>Select category</option>
+              <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+            </select>
+            <div class="field-error" *ngIf="postForm.get('category')?.invalid && postForm.get('category')?.touched">
+              <small>Category is required</small>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Publication Status</label>
+            <select formControlName="status" class="app-select">
+              <option value="draft">Draft</option>
+              <option value="pending">Pending Approval</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label>Author Display</label>
+            <input type="text" formControlName="author" class="app-input" placeholder="e.g. Lead Guide Jagadish" />
+          </div>
+        </div>
+
+        <!-- TAGS MANAGER -->
+        <div class="editor-card side-card">
+          <div class="card-head-row">
+            <h3 class="card-section-title">
+              <i class="bi bi-tags"></i> Tags
+            </h3>
+            <button type="button" class="btn-text-sm" (click)="addTag()">
+              <i class="bi bi-plus-circle"></i> Add
+            </button>
+          </div>
+
+          <div formArrayName="tags" class="tags-manager">
+            <div *ngFor="let tag of tags.controls; let i = index" class="tag-input-row">
+              <span class="tag-hash">#</span>
+              <input type="text" [formControlName]="i" class="app-input tag-field" placeholder="Tag name" />
+              <button type="button" class="tag-del-btn" (click)="removeTag(i)" *ngIf="tags.length > 1" title="Remove tag">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEATURED IMAGE UPLOAD -->
+        <div class="editor-card side-card">
+          <h3 class="card-section-title">
+            <i class="bi bi-image"></i> Featured Image
+          </h3>
+
+          <div *ngIf="imagePreview" class="image-preview-box">
+            <img loading="lazy" decoding="async" [src]="getImageSrc(imagePreview)" alt="Preview" />
+            <div class="img-preview-actions">
+              <button class="btn-app secondary sm" type="button" (click)="fileInput.click()">
+                <i class="bi bi-arrow-repeat"></i> Replace
+              </button>
+              <button class="btn-app danger sm" type="button" (click)="removeImage()">
+                <i class="bi bi-trash3"></i> Remove
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="!imagePreview" class="upload-dropzone" (click)="fileInput.click()">
+            <div class="upload-icon">
+              <i class="bi bi-cloud-arrow-up"></i>
+            </div>
+            <strong>Upload Cover Image</strong>
+            <span>Click to browse JPG, PNG, WEBP up to 25MB</span>
+          </div>
+
+          <input #fileInput type="file" accept="image/*" hidden (change)="onImageSelect($event)" />
+
+          <p class="img-rec-note">
+            <i class="bi bi-info-circle"></i> Recommended aspect ratio: 16:9 (1200x675px) for sharp social cards.
+          </p>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="side-actions-card">
+          <button class="btn-app primary publish-btn" type="button" (click)="publish()">
+            <i class="bi bi-send-fill"></i>
+            <span>Publish Now</span>
+          </button>
+          <button class="btn-app secondary draft-btn" type="button" (click)="savePost()">
+            <i class="bi bi-file-earmark-arrow-up"></i>
+            <span>Save as Draft</span>
+          </button>
+        </div>
+      </aside>
+    </form>
+  </div>
+</div>

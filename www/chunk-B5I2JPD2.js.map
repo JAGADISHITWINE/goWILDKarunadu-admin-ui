@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/treks/trek-list/trek-list.ts"],
+  "sourcesContent": ["import { HttpClient } from '@angular/common/http';\nimport { Injectable } from '@angular/core';\nimport { map } from 'rxjs';\nimport { EncryptionService } from 'src/app/services/encryption.service';\nimport { environment } from 'src/environments/environment';\n\n@Injectable({\n  providedIn: 'root',\n})\nexport class TrekList {\n  private API = `${environment.baseUrl}`;\n\n  constructor(private http: HttpClient, private crypto: EncryptionService) {}\n\n  getAllTreks(forceRefresh: boolean = false) {\n    const url = forceRefresh\n      ? `${this.API}/getAllTreks?_t=${Date.now()}`\n      : `${this.API}/getAllTreks`;\n\n    return this.http.get<{ payload: string }>(url).pipe(\n      map((res: any) => {\n        const decrypted = this.crypto.decrypt(res.data);\n        return {\n          ...res,\n          data: decrypted,\n        };\n      })\n    );\n  }\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;AASM,IAAO,YAAP,MAAO,UAAQ;EAGnB,YAAoB,MAA0B,QAAyB;AAAnD,SAAA,OAAA;AAA0B,SAAA,SAAA;AAFtC,SAAA,MAAM,GAAG,YAAY,OAAO;EAEsC;EAE1E,YAAY,eAAwB,OAAK;AACvC,UAAM,MAAM,eACR,GAAG,KAAK,GAAG,mBAAmB,KAAK,IAAG,CAAE,KACxC,GAAG,KAAK,GAAG;AAEf,WAAO,KAAK,KAAK,IAAyB,GAAG,EAAE,KAC7C,IAAI,CAAC,QAAY;AACf,YAAM,YAAY,KAAK,OAAO,QAAQ,IAAI,IAAI;AAC9C,aAAO,iCACF,MADE;QAEL,MAAM;;IAEV,CAAC,CAAC;EAEN;;;mCAnBW,WAAQ,mBAAA,UAAA,GAAA,mBAAA,iBAAA,CAAA;AAAA;6EAAR,WAAQ,SAAR,UAAQ,WAAA,YAFP,OAAM,CAAA;AAEd,IAAO,WAAP;;sEAAO,UAAQ,CAAA;UAHpB;WAAW;MACV,YAAY;KACb;;;",
+  "names": []
+}
