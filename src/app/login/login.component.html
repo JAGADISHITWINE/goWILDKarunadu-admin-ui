@@ -33,7 +33,7 @@
         <div class="hero-text-block">
           <div class="live-pill">
             <span class="live-dot"></span>
-            OPERATIONS CONSOLE v2.4
+            OPERATIONS
           </div>
           <h1 class="hero-headline">
             Expedition Command &amp; <br />
@@ -147,7 +147,7 @@
             type="submit"
             class="btn-login-submit"
             [disabled]="isSubmitting || credentials.invalid">
-            <span *ngIf="!isSubmitting">Authenticate &amp; Enter Console</span>
+            <span *ngIf="!isSubmitting">Authenticate</span>
             <span *ngIf="isSubmitting">Verifying credentials...</span>
             <i class="bi" [ngClass]="isSubmitting ? 'bi-arrow-repeat spin' : 'bi-arrow-right'"></i>
           </button>

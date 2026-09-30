@@ -419,6 +419,13 @@
               (click)="selectedSegment = 'bookings'">
               <i class="bi bi-receipt me-1"></i> Booking History ({{ bookings.length }})
             </button>
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="selectedSegment === 'wallet'"
+              (click)="loadUserWallet(user.id)">
+              <i class="bi bi-wallet2 me-1"></i> Wallet & Credits
+            </button>
           </div>
         </div>
 
@@ -528,6 +535,122 @@
             </div>
           </div>
         </div>
+
+        <!-- ── WALLET TAB ── -->
+        <div class="seg-content" *ngIf="selectedSegment === 'wallet'">
+          <!-- Feedback banner -->
+          <div *ngIf="walletFeedback" class="wallet-feedback-banner mb-3" [ngClass]="walletFeedback.type">
+            <i class="bi" [ngClass]="walletFeedback.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'"></i>
+            <span>{{ walletFeedback.message }}</span>
+            <button type="button" class="btn-close-alert" (click)="walletFeedback = null">&times;</button>
+          </div>
+
+          <!-- Loading state -->
+          <div *ngIf="isWalletLoading" class="wallet-loading-state surface-card p-4 text-center">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="mt-2 text-muted">Retrieving user wallet balance and ledger...</p>
+          </div>
+
+          <!-- Wallet Content -->
+          <div *ngIf="!isWalletLoading && wallet">
+            <!-- Balance Grid -->
+            <div class="wallet-balance-grid mb-4">
+              <div class="wb-card total-balance-card surface-card">
+                <div class="wb-icon-wrap primary">
+                  <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="wb-info">
+                  <span class="wb-label">Total Usable Balance</span>
+                  <h3 class="wb-amount">₹{{ wallet.totalUsableBalance | number:'1.2-2' }}</h3>
+                  <span class="wb-sub text-muted">Combined real cash + bonus</span>
+                </div>
+              </div>
+
+              <div class="wb-card surface-card">
+                <div class="wb-icon-wrap cash">
+                  <i class="bi bi-cash-stack"></i>
+                </div>
+                <div class="wb-info">
+                  <span class="wb-label">Cashback & Deposits</span>
+                  <h3 class="wb-amount text-success">₹{{ wallet.balance | number:'1.2-2' }}</h3>
+                  <span class="wb-sub text-muted">Directly usable / refundable</span>
+                </div>
+              </div>
+
+              <div class="wb-card surface-card">
+                <div class="wb-icon-wrap bonus">
+                  <i class="bi bi-gift-fill"></i>
+                </div>
+                <div class="wb-info">
+                  <span class="wb-label">Promotional Credits</span>
+                  <h3 class="wb-amount text-warning">₹{{ wallet.bonusBalance | number:'1.2-2' }}</h3>
+                  <span class="wb-sub text-muted">Non-refundable trekking vouchers</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Toolbar & Header -->
+            <div class="wallet-ledger-header d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="mb-0 text-white">Wallet Transaction Ledger</h4>
+                <p class="text-muted small mb-0">Audit history of credit awards, refunds, and booking checkouts</p>
+              </div>
+              <button class="btn-app primary btn-sm" type="button" (click)="openCreditModal()">
+                <i class="bi bi-plus-circle me-1"></i> Credit / Adjust Wallet
+              </button>
+            </div>
+
+            <!-- Transaction Table -->
+            <div class="table-shell surface-card" *ngIf="wallet.transactions && wallet.transactions.length > 0">
+              <table class="users-table wallet-table">
+                <thead>
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>Type</th>
+                    <th>Reason / Details</th>
+                    <th>Reference</th>
+                    <th class="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let tx of wallet.transactions">
+                    <td class="small text-muted">
+                      {{ tx.created_at | date:'dd MMM yyyy, hh:mm a' }}
+                    </td>
+                    <td>
+                      <span class="tx-badge" [ngClass]="tx.transaction_type === 'credit' ? 'tx-credit' : 'tx-debit'">
+                        <i class="bi" [ngClass]="tx.transaction_type === 'credit' ? 'bi-arrow-down-left' : 'bi-arrow-up-right'"></i>
+                        {{ tx.transaction_type | uppercase }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="tx-reason">{{ tx.reason }}</div>
+                      <small class="text-muted" *ngIf="tx.bonus_amount > 0">Includes ₹{{ tx.bonus_amount | number:'1.2-2' }} bonus</small>
+                    </td>
+                    <td>
+                      <span class="mono small">{{ tx.reference_id || '—' }}</span>
+                    </td>
+                    <td class="text-end fw-bold" [ngClass]="tx.transaction_type === 'credit' ? 'text-success' : 'text-danger'">
+                      {{ tx.transaction_type === 'credit' ? '+' : '-' }}₹{{ tx.amount | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Empty transactions state -->
+            <div class="empty-state surface-card p-4 text-center" *ngIf="!wallet.transactions || wallet.transactions.length === 0">
+              <div class="empty-icon mb-2">
+                <i class="bi bi-clock-history"></i>
+              </div>
+              <h5>No Wallet Transactions Yet</h5>
+              <p class="text-muted mb-3">This user has not received credits or made any wallet-funded payments.</p>
+              <button class="btn-app secondary btn-sm" type="button" (click)="openCreditModal()">
+                <i class="bi bi-plus-circle me-1"></i> Add First Credit
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -590,4 +713,91 @@
       </div>
     </div>
   </aside>
+</div>
+
+<!-- ════════════════════════════════════════════
+     Credit / Adjust User Wallet Modal
+════════════════════════════════════════════ -->
+<div class="wallet-modal-backdrop" *ngIf="isCreditModalOpen" (click)="closeCreditModal()">
+  <div class="wallet-modal-dialog" (click)="$event.stopPropagation()">
+    <div class="wallet-modal-header">
+      <div class="d-flex align-items-center gap-2">
+        <div class="wallet-modal-icon">
+          <i class="bi bi-cash-coin"></i>
+        </div>
+        <div>
+          <h3 class="modal-title">Credit User Wallet</h3>
+          <p class="modal-sub" *ngIf="user">Account: {{ user.name }} ({{ user.email }})</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="closeCreditModal()" aria-label="Close modal">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <form (ngSubmit)="submitCreditWallet()" class="wallet-modal-body">
+      <div class="form-row-2col">
+        <div class="form-group mb-3">
+          <label class="form-label">Real Cash / Deposit (₹)</label>
+          <input
+            type="number"
+            class="app-input"
+            name="amount"
+            [(ngModel)]="creditForm.amount"
+            min="0"
+            step="1"
+            placeholder="0.00"
+          />
+          <span class="form-hint">Withdrawable / standard refund balance</span>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Promotional Bonus (₹)</label>
+          <input
+            type="number"
+            class="app-input"
+            name="bonusAmount"
+            [(ngModel)]="creditForm.bonusAmount"
+            min="0"
+            step="1"
+            placeholder="0.00"
+          />
+          <span class="form-hint">Trek checkout discount credits</span>
+        </div>
+      </div>
+
+      <div class="form-group mb-3">
+        <label class="form-label">Reason / Justification <span class="text-danger">*</span></label>
+        <input
+          type="text"
+          class="app-input"
+          name="reason"
+          [(ngModel)]="creditForm.reason"
+          required
+          placeholder="e.g. Good-will compensation, Cancellation refund, Trek challenge reward"
+        />
+      </div>
+
+      <div class="form-group mb-4">
+        <label class="form-label">Reference ID / Ticket (Optional)</label>
+        <input
+          type="text"
+          class="app-input"
+          name="referenceId"
+          [(ngModel)]="creditForm.referenceId"
+          placeholder="e.g. TICKET-9821, REFUND-442"
+        />
+      </div>
+
+      <div class="wallet-modal-footer">
+        <button type="button" class="btn-app ghost" (click)="closeCreditModal()" [disabled]="isCreditingWallet">
+          Cancel
+        </button>
+        <button type="submit" class="btn-app primary" [disabled]="isCreditingWallet || (!creditForm.amount && !creditForm.bonusAmount)">
+          <span *ngIf="!isCreditingWallet"><i class="bi bi-check2-circle me-1"></i> Confirm & Credit</span>
+          <span *ngIf="isCreditingWallet"><span class="spinner-border spinner-border-sm me-1"></span> Processing...</span>
+        </button>
+      </div>
+    </form>
+  </div>
 </div>

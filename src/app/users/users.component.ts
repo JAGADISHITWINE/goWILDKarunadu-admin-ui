@@ -1,7 +1,7 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Users } from './users';
+import { Users, UserWalletData } from './users';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DropdownManagerService } from '../dropdown-manager/dropdown-manager.service';
 import { take } from 'rxjs';
@@ -43,7 +43,20 @@ export class UsersComponent implements OnInit {
   bookings: any[] = [];
   isLoading = true;
   isDetailView = false;
-  selectedSegment = 'details';
+  selectedSegment: 'details' | 'bookings' | 'wallet' = 'details';
+
+  // ── WALLET STATE ──
+  wallet: UserWalletData | null = null;
+  isWalletLoading = false;
+  isCreditModalOpen = false;
+  isCreditingWallet = false;
+  walletFeedback: { type: 'success' | 'error'; message: string } | null = null;
+  creditForm = {
+    amount: 0,
+    bonusAmount: 0,
+    reason: 'Admin Adjustment',
+    referenceId: ''
+  };
   showFilterPanel = false;
   viewMode: 'grid' | 'table' = 'grid';
   joinFrom: string = '';
@@ -349,12 +362,93 @@ export class UsersComponent implements OnInit {
     return map[status] || 'medium';
   }
 
+  loadUserWallet(userId: string) {
+    this.selectedSegment = 'wallet';
+    this.isWalletLoading = true;
+    this.walletFeedback = null;
+    this.userService.getUserWallet(userId).subscribe({
+      next: (res: any) => {
+        this.wallet = res?.data || {
+          balance: 0,
+          bonusBalance: 0,
+          totalUsableBalance: 0,
+          currency: 'INR',
+          transactions: []
+        };
+        this.isWalletLoading = false;
+      },
+      error: () => {
+        this.wallet = {
+          balance: 0,
+          bonusBalance: 0,
+          totalUsableBalance: 0,
+          currency: 'INR',
+          transactions: []
+        };
+        this.isWalletLoading = false;
+      }
+    });
+  }
+
+  openCreditModal() {
+    this.creditForm = {
+      amount: 0,
+      bonusAmount: 0,
+      reason: 'Admin Adjustment',
+      referenceId: 'ADM-' + Date.now().toString().slice(-6)
+    };
+    this.walletFeedback = null;
+    this.isCreditModalOpen = true;
+  }
+
+  closeCreditModal() {
+    this.isCreditModalOpen = false;
+  }
+
+  submitCreditWallet() {
+    if (!this.user?.id) return;
+    const amount = Number(this.creditForm.amount) || 0;
+    const bonusAmount = Number(this.creditForm.bonusAmount) || 0;
+
+    if (amount <= 0 && bonusAmount <= 0) {
+      this.walletFeedback = { type: 'error', message: 'Please specify an amount or bonus amount greater than ₹0.' };
+      return;
+    }
+
+    this.isCreditingWallet = true;
+    this.walletFeedback = null;
+
+    this.userService.creditUserWallet(this.user.id, {
+      amount,
+      bonusAmount,
+      reason: this.creditForm.reason || 'Admin Adjustment',
+      referenceId: this.creditForm.referenceId || undefined
+    }).subscribe({
+      next: (res: any) => {
+        this.isCreditingWallet = false;
+        this.isCreditModalOpen = false;
+        this.wallet = res?.data || this.wallet;
+        this.walletFeedback = { type: 'success', message: 'Wallet credited successfully!' };
+        if (this.user?.id) {
+          this.loadUserWallet(this.user.id);
+        }
+      },
+      error: (err: any) => {
+        this.isCreditingWallet = false;
+        this.walletFeedback = { type: 'error', message: err?.error?.message || 'Failed to credit user wallet.' };
+      }
+    });
+  }
+
   goBack() {
     this.isDetailView = false;
     this.isLoading = false;
     this.selectedSegment = 'details';
     this.user = null;
     this.bookings = [];
+    this.wallet = null;
+    this.isCreditModalOpen = false;
+    this.walletFeedback = null;
   }
 
   toggleFilter() {

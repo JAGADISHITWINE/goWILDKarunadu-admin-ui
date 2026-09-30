@@ -60,4 +60,52 @@ export class Users {
     )
   }
 
+  getUserWallet(userid: string) {
+    return this.http.get<{ success: boolean; data: any }>(`${this.API}/user/${userid}/wallet`).pipe(
+      map((res: any) => {
+        const decrypted = this.crypto.decrypt(res.data);
+        return {
+          ...res,
+          data: (decrypted || {
+            balance: 0,
+            bonusBalance: 0,
+            totalUsableBalance: 0,
+            currency: 'INR',
+            transactions: []
+          }) as UserWalletData
+        };
+      })
+    );
+  }
+
+  creditUserWallet(userid: string, payload: { amount: number; bonusAmount?: number; reason: string; referenceId?: string }) {
+    return this.http.post<{ success: boolean; message: string; data: any }>(`${this.API}/user/${userid}/wallet/credit`, payload).pipe(
+      map((res: any) => {
+        const decrypted = this.crypto.decrypt(res.data);
+        return {
+          ...res,
+          data: decrypted as UserWalletData
+        };
+      })
+    );
+  }
+
+}
+
+export interface WalletTransaction {
+  id: string;
+  amount: number;
+  bonus_amount: number;
+  transaction_type: 'credit' | 'debit';
+  reason: string;
+  reference_id?: string;
+  created_at: string;
+}
+
+export interface UserWalletData {
+  balance: number;
+  bonusBalance: number;
+  totalUsableBalance: number;
+  currency: string;
+  transactions: WalletTransaction[];
 }
